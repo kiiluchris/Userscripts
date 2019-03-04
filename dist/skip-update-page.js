@@ -14,7 +14,7 @@ const waybackify = re => {
 // ==UserScript==
 // @name         Skip Novel Update Page
 // @namespace    https://bitbucket.org/kiilu_chris/userscripts/raw/HEAD/skipUpdatePage.user.js
-// @version      0.1.5.0
+// @version      0.1.6
 // @description  Open Novel Chapters Immediately
 // @author       kiilu_chris
 // @match        http*://**/*
