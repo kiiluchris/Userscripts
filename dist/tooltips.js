@@ -1,10 +1,25 @@
-import { waybackify, regexConcat, zip } from './shared.js';
+const regexConcat = re1 => {
+    const re1Str = typeof re1 === "string" ? re1 : String(re1).slice(1,-1);
+    return re2 => {
+        const re2Str = typeof re2 === "string" ? re2 : String(re2).slice(1,-1);
+        return new RegExp(re1Str + re2Str)
+    }
+};
 
+const waybackify = re => {
+    const reStr = String(re).slice(1,-1);
+    return regexConcat(/(?:web.archive.org\/web\/\d+\/.*)?/)(reStr.replace(/(?:\\\/|$)/, "(:80)?\\\/"))
+};
+  
+const zip = (xs, ys) => {
+  const len = Math.min(xs.length, ys.length);
+  return xs.slice(0, len).map((x,i) => [x, ys[i]])
+};
 
 // ==UserScript==
 // @name         Novel Tooltips
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1
 // @description  try to take over the world!
 // @author       You
 // @match        http*://**/*
@@ -18,8 +33,8 @@ const TOOLTIP_CLASSNAME = 'novel-tooltip';
 const TOOLTIP_REPLACETEXT = `<span class='${TOOLTIP_CLASSNAME}'>$1</span>`;
 
 const mapRegexToTooltip = (re, getAll = false) => el => {
-  el.innerHTML = el.innerHTML.replace(re, TOOLTIP_REPLACETEXT)
-  const tooltips = [...el.getElementsByClassName(TOOLTIP_CLASSNAME)]
+  el.innerHTML = el.innerHTML.replace(re, TOOLTIP_REPLACETEXT);
+  const tooltips = [...el.getElementsByClassName(TOOLTIP_CLASSNAME)];
   return getAll ? tooltips : tooltips[0]
 };
 
@@ -28,16 +43,16 @@ const getElements = ({selector, filterFn = _ => _ }, mapRootsRe = null) => {
     .filter(filterFn);
   const roots = mapRootsRe
     ? els.map(mapRegexToTooltip(mapRootsRe))
-    : els
+    : els;
   return [roots]
-}
+};
 
 const fetchDocument = url => new Promise(resolve => {
   const req = new XMLHttpRequest();
   req.responseType = 'document';
   req.addEventListener('load', ({target:{response}}) => {
-    resolve(response)
-  })
+    resolve(response);
+  });
   req.open('GET', url);
   req.send();
 });
@@ -48,16 +63,16 @@ const getTooltipData = async ({selectorOpts: options, fn, mapRoots}) => {
     const [rootEls, textEls] = await Promise.resolve(fn(...els));
     return zip(rootEls, textEls.map(el => (el.innerHTML || el.data || el).trim()));
   } catch(e) {
-    console.error(e)
+    console.error(e);
     return [];
   }
-}
+};
 getTooltipData.help = () => {
   console.log([
     "Argument is an object {re, selectorOpts, mapRoots, fn}",
     "selectorOpts is an object {selector, filterFn}"
-  ].join("\n"))
-}
+  ].join("\n"));
+};
 const templates = [
   {
     re: [/holdxandclick.wordpress.com\/20\d{2}\/\d{2}\/\d{2}/],
@@ -71,7 +86,7 @@ const templates = [
         .map(el => el.innerText.trim());
       const startI = text.findIndex(txt => {
         return txt != firstText && txt.startsWith(firstText);
-      })
+      });
       return [els, text.slice(startI).filter(_ => _)]
     }
   }, {
@@ -107,7 +122,7 @@ const templates = [
     },
     fn: els => {
       const text = [...document.querySelectorAll('.entry-content a[href^="#return"]')]
-        .map(el => el.parentElement.innerHTML)
+        .map(el => el.parentElement.innerHTML);
       return [els, text]
     }
   }, {
@@ -119,9 +134,9 @@ const templates = [
     fn: els => {
       const text = els.map(el => el.innerHTML).pop().split('\n').slice(1);
       const spanEls = els.map(el => {
-        el.innerHTML = el.innerHTML.replace(/({\d+})/, TOOLTIP_REPLACETEXT)
+        el.innerHTML = el.innerHTML.replace(/({\d+})/, TOOLTIP_REPLACETEXT);
         return el.getElementsByClassName(TOOLTIP_CLASSNAME)[0]
-      })
+      });
       return [spanEls, text];
     }
   }, {
@@ -130,7 +145,7 @@ const templates = [
       selector: 'span[id^="footnote-ref"] a'
     },
     fn: els => {
-      const textEls = els.map(el => document.getElementById(el.hash.slice(1)))
+      const textEls = els.map(el => document.getElementById(el.hash.slice(1)));
       return [els, textEls];
     }
   }, {
@@ -139,8 +154,8 @@ const templates = [
       selector: '.entry-content small a[href^="#t"] sup',
     },
     fn: els => {
-      const rootEls = els.map(e => e.parentElement)
-      const textEls = rootEls.map(e => document.getElementsByName(e.hash.slice(1))[0].nextElementSibling)
+      const rootEls = els.map(e => e.parentElement);
+      const textEls = rootEls.map(e => document.getElementsByName(e.hash.slice(1))[0].nextElementSibling);
       return [rootEls, textEls];
     }
   }, {
@@ -149,11 +164,11 @@ const templates = [
       selector: '.entry-content a[href*="/glossary/"]',
     },
     fn: async els => {
-      const rootEls = els
+      const rootEls = els;
       const textEls = rootEls.map(e =>
         fetchDocument(e.href)
           .then(doc => [...doc.querySelectorAll('#main .entry-content p span')]
-                .reduce((acc, el) => acc + el.parentElement.outerHTML, "")))
+                .reduce((acc, el) => acc + el.parentElement.outerHTML, "")));
       return [rootEls, await Promise.all(textEls)];
     }
   }, {
@@ -164,8 +179,8 @@ const templates = [
     },
     mapRoots: /([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/,
     fn(roots){
-      const textEls = [...document.querySelectorAll('.entry-content ol li')]
-      const xs = roots.length ? roots : [...document.querySelectorAll('.entry-content p sup')]
+      const textEls = [...document.querySelectorAll('.entry-content ol li')];
+      const xs = roots.length ? roots : [...document.querySelectorAll('.entry-content p sup')];
       return [xs, textEls]
     }
   }, {
@@ -197,7 +212,7 @@ const templates = [
     mapRoots: /([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/,
     fn(roots){
       const textEls = [...document.querySelectorAll('.entry-content p')]
-		.filter(el => el.innerText.match(/^[0-9]\. /))
+		.filter(el => el.innerText.match(/^[0-9]\. /));
       return [roots, textEls]
     }
   }, {
@@ -218,7 +233,7 @@ const templates = [
     },
 	fn(els){
       const textEls = [...document.querySelectorAll('.entry-content p')]
-          .filter(el => el.innerText.match(/^(\[|{)\d+(\]|})/))
+          .filter(el => el.innerText.match(/^(\[|{)\d+(\]|})/));
       return [els, textEls]
 	}
   }, {
@@ -227,24 +242,20 @@ const templates = [
       selector: '#content',
     },
     fn([root]){
-      const tooltipRe = /(\(\d+\))/
-      const text = [...root.childNodes].filter(el => el.constructor === Text && el.data.match(regexConcat("^")(tooltipRe)))
-      const tiproots = mapRegexToTooltip(new RegExp(tooltipRe, 'g'), true)(root)
+      const tooltipRe = /(\(\d+\))/;
+      const text = [...root.childNodes].filter(el => el.constructor === Text && el.data.match(regexConcat("^")(tooltipRe)));
+      const tiproots = mapRegexToTooltip(new RegExp(tooltipRe, 'g'), true)(root);
       return [tiproots, text]
     }
   }
 ];
-
-
-
-;(async function() {
-    'use strict';
+(async function() {
 
     // Your code here...
-  unsafeWindow.userscripts = unsafeWindow.userscripts || {}
+  unsafeWindow.userscripts = unsafeWindow.userscripts || {};
   unsafeWindow.userscripts.tooltips = {
     print(){
-      console.log(this.vars)
+      console.log(this.vars);
     },
     getEls: getElements,
     getData: getTooltipData,
@@ -267,16 +278,16 @@ const templates = [
       size: 'large',
     })]
   );
-  console.log(`Tooltip Userscript: ${tooltips.length} tooltips enabled`)
+  console.log(`Tooltip Userscript: ${tooltips.length} tooltips enabled`);
   window.addEventListener('keyup', e => {
     if(e.altKey && e.key === '/'){
       tooltips.forEach(([el]) => {
-        const tooltip = el._tippy
-        const {offsetTop} = el
+        const tooltip = el._tippy;
+        const {offsetTop} = el;
         if(!(offsetTop < window.scrollY && offsetTop > window.scrollY - window.innerHeight)) return
-        tooltip.show()
+        tooltip.show();
         setTimeout(tooltip.hide, 5000);
-      })
+      });
     }
-  })
+  });
 })().catch(console.error);

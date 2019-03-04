@@ -1,9 +1,20 @@
-import { waybackify } from './shared.js';
+const regexConcat = re1 => {
+    const re1Str = typeof re1 === "string" ? re1 : String(re1).slice(1,-1);
+    return re2 => {
+        const re2Str = typeof re2 === "string" ? re2 : String(re2).slice(1,-1);
+        return new RegExp(re1Str + re2Str)
+    }
+};
+
+const waybackify = re => {
+    const reStr = String(re).slice(1,-1);
+    return regexConcat(/(?:web.archive.org\/web\/\d+\/.*)?/)(reStr.replace(/(?:\\\/|$)/, "(:80)?\\\/"))
+};
 
 // ==UserScript==
 // @name         Transition Chapter
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1
 // @description  try to take over the world!
 // @match        http*://**/*
 // @author       You
@@ -16,7 +27,6 @@ const id = x => x;
 
 
 (function() {
-  'use strict';
 
   const selectChapter = (prev, next, cond) => e => {
     if(!cond(e)) return false;
@@ -26,7 +36,7 @@ const id = x => x;
       case 'ArrowRight':
         return document.querySelector(next).click();
     }
-  }
+  };
   const selectChapterFactory = (cond = (e => e.shiftKey), getChapters = null) => (prevSelector, nextSelector, splitChapterSelectors) => {
     const {prevPartSelector, nextPartSelector} = splitChapterSelectors || {};
     let canOpenChapters = false;
@@ -46,7 +56,7 @@ const id = x => x;
               insert: true,
               setParent: true
             });
-          })
+          });
         }
       }
     }
@@ -93,9 +103,9 @@ const id = x => x;
           else if(prev && currentIndex > 0) return currentIndex - 1;
           else if(next && currentIndex < links.length - 1) return currentIndex + 1;
           else return -1
-        }
+        };
         const index = getIndex();
-        ~index && links[index].click()
+        ~index && links[index].click();
       }
     }, {
       re: /volarenovels.com\/[^\/]+\/[a-z\d-]+-chapter/,
@@ -106,16 +116,16 @@ const id = x => x;
   const getChapterSelector = url => {
     for(const {re, selectors, cond, getChapters, handler} of chapterSelectorMap){
       if(waybackify(re).test(url)) {
-        console.log(`Chapter Transition Userscript: URL ${re} matched`)
+        console.log(`Chapter Transition Userscript: URL ${re} matched`);
         return handler ? (e => {
-          const [prev, next] = [e.key === 'ArrowLeft', e.key === 'ArrowRight']
-          e.shiftKey && (prev || next) && handler(prev, next)
+          const [prev, next] = [e.key === 'ArrowLeft', e.key === 'ArrowRight'];
+          e.shiftKey && (prev || next) && handler(prev, next);
         }) : selectChapterFactory(cond, getChapters)(...selectors);
       }
     }
-    console.log(`Chapter Transition Userscript: No URL matched`)
+    console.log(`Chapter Transition Userscript: No URL matched`);
     return id;
-  }
+  };
 
   window.addEventListener('keyup', getChapterSelector(window.location.href));
 })();

@@ -1,9 +1,20 @@
-import { waybackify } from './shared.js';
+const regexConcat = re1 => {
+    const re1Str = typeof re1 === "string" ? re1 : String(re1).slice(1,-1);
+    return re2 => {
+        const re2Str = typeof re2 === "string" ? re2 : String(re2).slice(1,-1);
+        return new RegExp(re1Str + re2Str)
+    }
+};
+
+const waybackify = re => {
+    const reStr = String(re).slice(1,-1);
+    return regexConcat(/(?:web.archive.org\/web\/\d+\/.*)?/)(reStr.replace(/(?:\\\/|$)/, "(:80)?\\\/"))
+};
 
 // ==UserScript==
 // @name         Skip Novel Update Page
 // @namespace    https://bitbucket.org/kiilu_chris/userscripts/raw/HEAD/skipUpdatePage.user.js
-// @version      0.1.6
+// @version      0.1.5.0
 // @description  Open Novel Chapters Immediately
 // @author       kiilu_chris
 // @match        http*://**/*
@@ -22,12 +33,12 @@ const linkTemplates = {
       filterText: /Chapter \d+$/,
     },
     mapper({url, text}) {
-      const chapterNum = text.match(/Chapter (\d+)$/)[1]
+      const chapterNum = text.match(/Chapter (\d+)$/)[1];
       return `https://entruce.wordpress.com/projects/knm-chapters/knm-chapter-${chapterNum}/`
     }
   }
-}
-unsafeWindow.userscripts = unsafeWindow.userscripts || {}
+};
+unsafeWindow.userscripts = unsafeWindow.userscripts || {};
 unsafeWindow.userscripts.skipUpdates = {
   processPages(options) {
     return (templateFn) => {
@@ -55,7 +66,7 @@ unsafeWindow.userscripts.skipUpdates = {
   openURLs,
   openURLsInRange(urlFn){
     return (start, end, isSaved = false) => {
-      const urls = [...Array(end - start + 1).keys()].map(offset => urlFn(start + offset))
+      const urls = [...Array(end - start + 1).keys()].map(offset => urlFn(start + offset));
       return openURLs(urls, isSaved)
     }
   }
@@ -109,7 +120,7 @@ const savePage = async (url) => {
 
   if(!isPageSaved) {
     throw new Error(`Save page failed: URL ${url} not saved`);
-    alert('Skipper: Timed out')
+    alert('Skipper: Timed out');
   }
 };
 
@@ -123,13 +134,12 @@ function getLinks({elements, selector, filterHref, filterText, condition}) {
     links = links.filter(el => filterText.test(el.innerText));
   }
   return console.log(links) || links;
-};
-async function openLinks (links, isSaved){
+}async function openLinks (links, isSaved){
   if(!links.length) return false;
   const [first, ...rest] = links;
   if(!isSaved) rest.reverse();
   for(const link of rest){
-    if(isSaved) await savePage(link.href)
+    if(isSaved) await savePage(link.href);
     else {
       GM_openInTab(link.href, {
         active: false,
@@ -140,10 +150,9 @@ async function openLinks (links, isSaved){
   }
   first.click();
   return true;
-};
-
+}
 function openURLs([firstUrl, ...urls], isSaved = false) {
-  const links = urls.map(u => ({href: u}))
+  const links = urls.map(u => ({href: u}));
   links.unshift({
     click(){
       const link = document.createElement('a');
@@ -154,12 +163,12 @@ function openURLs([firstUrl, ...urls], isSaved = false) {
           message: "replaceMonitorNovelUpdatesUrl",
           url: link.href,
           extension: EXTENSION_NAME
-        })
-      })
+        });
+      });
       document.body.appendChild(link);
       link.click();
     }
-  })
+  });
   return openLinks(links, isSaved)
 }
 const openLinksFactory = (options) => (
@@ -223,19 +232,19 @@ Promise.race([getMessageFromExtension("loading"), windowLoaded]).then(async save
     ],
     async cb(isSaved){
       const els = [...document.querySelectorAll('.entry-content a[href*="table-of-contents"]')];
-      const chapters = els.map(el => "Chapter " + el.innerText.match(/\d+/)[0])
+      const chapters = els.map(el => "Chapter " + el.innerText.match(/\d+/)[0]);
       const end = els[0].href.slice(0,-1).lastIndexOf('/');
       const tocURL = els[0].href.slice(0, end);
       const doc = await new Promise(res => {
-          const req = new XMLHttpRequest()
-          req.responseType = 'document'
-          req.addEventListener('load', ({target:{response:doc}}) => res(doc))
-          req.open('GET', tocURL)
-          req.send(null)
-      })
+          const req = new XMLHttpRequest();
+          req.responseType = 'document';
+          req.addEventListener('load', ({target:{response:doc}}) => res(doc));
+          req.open('GET', tocURL);
+          req.send(null);
+      });
       const links = [...doc.querySelectorAll('.entry-content details a[href*="table-of-contents"]')]
           .filter(el => chapters.includes(el.innerText))
-          .map(el => el.href)
+          .map(el => el.href);
       return openURLs(links, isSaved)
     }
   },{
@@ -283,13 +292,13 @@ Promise.race([getMessageFromExtension("loading"), windowLoaded]).then(async save
       banner && (banner.style.display = 'none');
       const urlSplitLen = window.location.pathname.match(/[^\/]+/)[0].split('-').length;
       if(urlSplitLen !== 2){
-        const iframe = document.querySelector('div.post-embed iframe.wp-embedded-content')
+        const iframe = document.querySelector('div.post-embed iframe.wp-embedded-content');
         window.location.href = iframe
           ? iframe.src.replace(/embed.*/, '')
         : [...document.querySelectorAll('div.post-content > div.entry-content > p')].pop().innerText;
       } else {
-        const prev = document.querySelector('.acp_previous_page  a')
-        const next = document.querySelector('.acp_next_page  a')
+        const prev = document.querySelector('.acp_previous_page  a');
+        const next = document.querySelector('.acp_next_page  a');
         window.addEventListener('keyup', e => {
           if(!e.shiftKey) return
           switch(e.key){
@@ -432,8 +441,8 @@ Promise.race([getMessageFromExtension("loading"), windowLoaded]).then(async save
   }, {
     urls: [ /scrya.org\/20\d{2}\/\d{2}\/\d{2}/, ],
     cb: isSaved => {
-      const chapterURL = n => `http://scrya.org/my-disciple-died-yet-again/disciple-chapter-${n}/`
-      const [start, end] = document.querySelector('.entry-title').innerText.match(/(\d+)/g).map(c => +c)
+      const chapterURL = n => `http://scrya.org/my-disciple-died-yet-again/disciple-chapter-${n}/`;
+      const [start, end] = document.querySelector('.entry-title').innerText.match(/(\d+)/g).map(c => +c);
       const links = !end ? [chapterURL(start)] : [...Array(end - start + 1).keys()].map(i => i + start).map(c => chapterURL(c));
       return openURLs(links, isSaved)
     }
@@ -442,9 +451,9 @@ Promise.race([getMessageFromExtension("loading"), windowLoaded]).then(async save
   for(const {urls, cb} of config){
     let urlIndex = checkUrlInArray(urls);
     if(~urlIndex){
-      console.log(`SkipUpdates Usersript: Matched URL ${urls[urlIndex]}`)
+      console.log(`SkipUpdates Usersript: Matched URL ${urls[urlIndex]}`);
       return typeof cb === "function" && cb(savedPage);
     }
   }
-  console.log(`SkipUpdates Usersript: No URL matched`)
+  console.log(`SkipUpdates Usersript: No URL matched`);
 }).catch(console.error);
