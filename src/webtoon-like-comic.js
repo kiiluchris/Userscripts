@@ -14,7 +14,7 @@
     // Your code here...
     window.addEventListener('load', () => {
       setTimeout(() => {
-        const likeButton = document.querySelector('#_bottomLikeSubscribe > li:nth-child(1) > a');
+        const likeButton = document.getElementById('likeItButton');
         const isLiked = likeButton.firstElementChild.classList.contains('on')
         if(!isLiked){
             likeButton.click();
