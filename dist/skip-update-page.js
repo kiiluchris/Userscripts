@@ -211,6 +211,9 @@ Promise.race([getMessageFromExtension("loading"), windowLoaded]).then(async save
     urls: [/bananachocolatecosmos.wordpress.com\/20\d{2}\/\d{2}\/\d{2}/, /novelsnchill\.com\/[^\/]+-chapter-\d+-release/],
     cb: clickElSetup('.entry-content a[href*="chapter"]')
   }, {
+    urls: [/novelsformy.blogspot.com\/20\d{2}\/\d{2}/],
+    cb: clickElSetup('.entry-content a[href*="/p/"]')
+  },{
     urls: [
       /rebirth\.online\/20\d{2}\/\d{2}\/\d{2}/,
       /www.wuxiaworld\.com\/[^\/]+chapter/,
