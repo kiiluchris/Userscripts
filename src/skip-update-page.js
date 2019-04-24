@@ -1,4 +1,4 @@
-import { waybackify } from './shared.js';
+import { waybackify } from './shared';
 
 // ==UserScript==
 // @name         Skip Novel Update Page

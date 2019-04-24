@@ -1,4 +1,4 @@
-import { waybackify } from './shared.js';
+import { waybackify } from './shared';
 
 // ==UserScript==
 // @name         Transition Chapter
@@ -100,6 +100,10 @@ const id = x => x;
     }, {
       re: /volarenovels.com\/[^\/]+\/[a-z\d-]+-chapter/,
       selectors: ['.entry-content p[style="text-align: center;"] a:nth-child(1)', '.entry-content p[style="text-align: center;"] a:nth-last-child(1)']
+    },
+    {
+      re: /www.shinsori.com\/.+-chapter-\d+\/?/,
+      selectors: ['.entry-content a.shortc-button.black:nth-child(1)', '.entry-content a.shortc-button.black:nth-last-child(1)']
     }
   ];
 

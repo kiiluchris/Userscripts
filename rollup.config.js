@@ -1,16 +1,21 @@
+import resolve from 'rollup-plugin-node-resolve';
 const path = require('path');
+const fs = require('fs');
+
+
 const entryRoot = path.resolve(__dirname, 'src')
 const outputRoot = path.resolve(__dirname, 'dist')
+const srcFiles = fs.readdirSync(entryRoot).filter(f => (
+    f.endsWith(".js")
+));
 
-module.exports = [
-    'chapter-transition',
-    'skip-update-page',
-    'tooltips',
-    'webtoon-like-comic'
-].map(file_ => ({
-    input: path.resolve(entryRoot, `${file_}.js`),
+module.exports = srcFiles.map(file_ => ({
+    input: path.resolve(entryRoot, file_),
     output: {
-        file: path.resolve(outputRoot, `${file_}.js`),
+        file: path.resolve(outputRoot, file_),
         format: 'esm'
-    }
+    },
+    plugins: [
+        resolve()
+    ]
 }));

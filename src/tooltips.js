@@ -1,4 +1,4 @@
-import { waybackify, regexConcat, zip } from './shared.js';
+import { waybackify, regexConcat, zip } from './shared';
 
 
 // ==UserScript==

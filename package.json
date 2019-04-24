@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/kiiluchris/Userscripts#readme",
   "devDependencies": {
-    "rollup": "^1.4.1"
+    "rollup": "^1.4.1",
+    "rollup-plugin-node-resolve": "^4.2.3"
   },
   "dependencies": {}
 }
