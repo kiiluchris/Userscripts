@@ -8,17 +8,16 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
-    'use strict';
+(function () {
+  'use strict';
 
-    // Your code here...
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const likeButton = document.getElementById('likeItButton');
-        const isLiked = likeButton.firstElementChild.classList.contains('on')
-        if(!isLiked){
-            likeButton.click();
-        }
-      }, 5000);
-    });
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const likeButton = document.getElementById('likeItButton');
+      const isLiked = likeButton.firstElementChild.classList.contains('on')
+      if (!isLiked) {
+        likeButton.click();
+      }
+    }, 5000);
+  });
 })();
