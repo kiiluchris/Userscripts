@@ -99,13 +99,14 @@ function blockOwnPlaybackOverlay(videoEls) {
   })
 }
 
-function videoControlKeyEvent(eventHandler, playbackRateDelta, pipButton) {
+function videoControlKeyEvent(eventHandler, playbackRateDelta, pipButton, data = { isRunning: false }) {
   return videoEl => e => {
-    if (!e.shiftKey) return
+    if (data.isRunning || !e.shiftKey) return
     if (e.key === '~') {
       pipButton.click()
       return
     }
+    data.isRunning = true;
     if (videoEl.dataset.hasOwnPlaybackControls === "true") return
     eventHandler(e)
     switch (e.key) {
@@ -116,6 +117,9 @@ function videoControlKeyEvent(eventHandler, playbackRateDelta, pipButton) {
         videoEl.playbackRate += playbackRateDelta
         break
     }
+    setTimeout(() => {
+      data.isRunning = false;
+    }, 250)
   }
 }
 
@@ -147,7 +151,7 @@ function createPip() {
   const playbackRateDelta = 0.25;
   const videoKeydownEventHandler = videoControlKeyEvent(e => {
     e.stopPropagation()
-  }, playbackRateDelta, pipButton)
+  }, playbackRateDelta, pipButton, { isRunning: false })
   videoEls.forEach(el => {
     const hasOwnOverlay = urlsWithOwnPlaybackRate
       .some(re => re.test(window.location.href))
@@ -157,6 +161,7 @@ function createPip() {
       videoEl = el
     })
     el.addEventListener('keyup', videoKeydownEventHandler(el), true)
+    el.addEventListener('keydown', videoKeydownEventHandler(el), true)
   })
 
   setPipEvents(playbackRateDelta, pipButton, () => videoEl)

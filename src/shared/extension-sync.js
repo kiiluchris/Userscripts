@@ -26,6 +26,7 @@ export const sendWindowMessage = (data, { mWindow = window, target = "*" } = {})
 };
 
 export const windowLoaded = () => new Promise(res => {
+  if (document.readyState === 'complete') return res(false)
   window.addEventListener("load", e => {
     res(false);
   });

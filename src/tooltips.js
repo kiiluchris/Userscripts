@@ -18,6 +18,9 @@ const TOOLTIP_CLASSNAME = 'novel-tooltip';
 const TOOLTIP_REPLACETEXT = `<span class='${TOOLTIP_CLASSNAME}'>$1</span>`;
 
 const mapRegexToTooltip = (re, getAll = false) => el => {
+  const existingTooltips = [...el.getElementsByClassName(TOOLTIP_CLASSNAME)]
+  if (existingTooltips.length)
+    return getAll ? existingTooltips : existingTooltips[0]
   el.innerHTML = el.innerHTML.replace(re, TOOLTIP_REPLACETEXT)
   const tooltips = [...el.getElementsByClassName(TOOLTIP_CLASSNAME)]
   return getAll ? tooltips : tooltips[0]

@@ -39,6 +39,7 @@ const sendWindowMessage = (data, { mWindow = window, target = "*" } = {}) => {
 };
 
 const windowLoaded = () => new Promise(res => {
+  if (document.readyState === 'complete') return res(false)
   window.addEventListener("load", e => {
     res(false);
   });
@@ -251,6 +252,12 @@ runOnPageLoad(async savedPage => {
       selector: '.entry-content a:not([href*="?share"])'
     })
   }, {
+    urls: [/foxaholic.blog\/20\d{2}\/\d{2}\/\d{2}/],
+    cb: openLinksFactory({
+      selector: ".entry-content a:not([class])",
+      filterText: /Free/,
+    }),
+  }, {
     urls: [/bananachocolatecosmos.wordpress.com\/20\d{2}\/\d{2}\/\d{2}/, /novelsnchill\.com\/[^\/]+-chapter-\d+-release/],
     cb: clickElSetup('.entry-content a[href*="chapter"]')
   }, {
@@ -407,7 +414,7 @@ runOnPageLoad(async savedPage => {
   }, {
     urls: [
       /kitakamiooi(?:.wordpress)?.com\/20\d{2}\/\d{2}\/\d{2}/,
-      /isohungrytls.com\/20\d{2}\/\d{2}\//
+      /isohungrytls.com\/(?:20\d{2}\/\d{2}|uncategorized)\//
     ],
     cb: openLinksFactory({
       selector: '.entry-content a, .entry a:not(.jp-relatedposts-post-a)',
