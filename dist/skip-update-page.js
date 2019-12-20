@@ -203,7 +203,7 @@ const openLinksFactory = (options) => (
 );
 
 const clickElSetup = selector => () => document.querySelector(selector).click();
-
+const multiParentSelector = (...parents) => child => parents.map(p => p + ' ' + child);
 runOnPageLoad(async savedPage => {
   if (savedPage) {
     await getMessageFromExtension("complete");
@@ -244,7 +244,7 @@ runOnPageLoad(async savedPage => {
       /yurikatrans.xyz\/uncategorized/
     ],
     cb: openLinksFactory({
-      selector: '.entry-content a:not([href*="/uncategorized/"]), #content a:not([href*="/uncategorized/"])'
+      selector: multiParentSelector('.entry-content', '#content')('a:not([href*="/uncategorized/"])[href*="yurikatrans.xyz/"]')
     })
   }, {
     urls: [/lightnovelstranslations.com\/[^\/]+-(chapter|epilogue|prologue)/],

@@ -36,6 +36,12 @@ const clickElementAndLog = (selector, message, errorMessage) => {
   }
 };
 
+const multiFunc = (...fns) => {
+  return (...args) => {
+    fns.forEach(fn => fn(...args));
+  }
+};
+
 
 (function () {
 
@@ -43,6 +49,11 @@ const clickElementAndLog = (selector, message, errorMessage) => {
     '.browser-push .browser-push-btn[data-type="no"]',
     'Notification prompt hidden',
     'Notification prompt element not found'
+  );
+  const hideVIPPrompt = clickElementAndLog(
+    '#layui-layer1 .icon-sprites3x',
+    'VIP prompt hidden',
+    'VIP prompt element not found'
   );
 
   const closeLoginForm = clickElementAndLog(
@@ -53,7 +64,7 @@ const clickElementAndLog = (selector, message, errorMessage) => {
 
   const match = [
     [/www.flying-lines.com\/nu/, closeLoginForm],
-    [/www.flying-lines.com\/chapter/, hideNotificationPrompt],
+    [/www.flying-lines.com\/chapter/, multiFunc(hideNotificationPrompt, hideVIPPrompt)],
   ].find(([re]) => re.test(window.location.href));
   if (!match) return
   window.addEventListener('load', match[1]);
