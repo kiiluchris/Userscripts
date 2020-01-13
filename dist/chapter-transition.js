@@ -137,6 +137,9 @@ const id = x => x;
     }, {
       re: /wuxiaworld.online\/[^\/]+\/.*chapter/,
       selectors: ['.switch-title:nth-child(1) a', '.switch-title:nth-last-child(1) a']
+    }, {
+      re: /chap.manganelo.com\/manga-[a-zA-Z0-9]+\/chapter-\d+/,
+      selectors: ['a.navi-change-chapter-btn-prev', 'a.navi-change-chapter-btn-next']
     }
   ];
 
