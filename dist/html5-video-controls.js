@@ -139,7 +139,10 @@ function setPipEvents(playbackRateDelta, pipButton, getVideoEl) {
 
 
 function addClickListener(el, fn) {
-  el.addEventListener('click', fn);
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    fn(e);
+  });
 }
 
 function playbackRateControls(video, playbackChangeRate) {
@@ -148,9 +151,9 @@ function playbackRateControls(video, playbackChangeRate) {
   const overlay = document.createElement('div');
   const slower = document.createElement('p');
   const faster = document.createElement('p');
-  slower.innerText = '<<';
+  slower.innerHTML = '&#x1F40C;';
+  faster.innerHTML = '&#x1F407;';
   slower.style.color = '#fff';
-  faster.innerText = '>>';
   faster.style.color = '#fff';
   overlay.style = `\
   position: absolute;
