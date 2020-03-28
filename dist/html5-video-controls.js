@@ -137,6 +137,41 @@ function setPipEvents(playbackRateDelta, pipButton, getVideoEl) {
   });
 }
 
+
+function addClickListener(el, fn) {
+  el.addEventListener('click', fn);
+}
+
+function playbackRateControls(video, playbackChangeRate) {
+  if (video.dataset.controlsAdded === 'true') return
+  video.dataset.controlsAdded = 'true';
+  const overlay = document.createElement('div');
+  const slower = document.createElement('p');
+  const faster = document.createElement('p');
+  slower.innerText = '<<';
+  slower.style.color = '#fff';
+  faster.innerText = '>>';
+  faster.style.color = '#fff';
+  overlay.style = `\
+  position: absolute;
+  display: inline-flex;
+  grid-column-gap: 8px;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  `;
+  overlay.appendChild(slower);
+  overlay.appendChild(faster);
+  video.parentElement.appendChild(overlay);
+  addClickListener(slower, _e => {
+    video.playbackRate -= playbackChangeRate;
+  });
+  addClickListener(faster, _e => {
+    video.playbackRate += playbackChangeRate;
+  });
+  return overlay
+}
+
 function createPip() {
   const videoEls = getVideoElements();
   if (!videoEls.length) return [];
@@ -155,6 +190,7 @@ function createPip() {
       .some(re => re.test(window.location.href));
     !hasOwnOverlay && setupPlaybackRate(el);
     el.dataset.isPipMonitored = true;
+    playbackRateControls(el, playbackRateDelta);
     el.addEventListener('focus', _e => {
       videoEl = el;
     });
