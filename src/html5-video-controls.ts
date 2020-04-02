@@ -338,6 +338,9 @@ function createSeekUi(video: CustomHTMLVideoElement) {
     container
   }
 }
+const urlsWithOwnControls = [
+  /www.youtube.com/
+]
 
 const setupHooks = [
   addSetupHook('playbackRateChange', (video, _videoData) => {
@@ -354,6 +357,9 @@ const setupHooks = [
     })
   }),
   addSetupHook('windowPlayControls', (_video, videoData) => {
+    if (urlsWithOwnControls.some(re => re.test(window.location.href))) {
+      return
+    }
     window.addEventListener('keyup', e => {
       const key = e.key.toUpperCase() as PlaybackControls
       if (!PlaybackControlValues.includes(key)) { return }
