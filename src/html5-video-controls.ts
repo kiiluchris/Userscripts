@@ -9,7 +9,6 @@ interface SyncData {
 interface VideoData {
   browserAgent: BrowserAgent,
   focusedVideo: () => CustomHTMLVideoElement,
-  blockingKeyboardHandler: (videoEl: CustomHTMLVideoElement) => (e: KeyboardEvent) => void,
   playbackChangeRate: number,
   pipButton: HTMLButtonElement,
   eventSyncData: SyncData,
@@ -27,6 +26,8 @@ enum PlaybackControls {
   Prev5 = "J",
   Ahead10 = ";",
   Prev10 = "H",
+  Slower = ",",
+  Faster = ".",
   Seek0 = "0",
   Seek1 = "1",
   Seek2 = "2",
@@ -38,13 +39,15 @@ enum PlaybackControls {
   Seek8 = "8",
   Seek9 = "9",
 }
-const { Play, Prev10, Prev5, Ahead10, Ahead5, ...PlaybackSeekControls } = PlaybackControls
+const { Play, Prev10, Prev5, Ahead10, Ahead5, Slower, Faster, ...PlaybackSeekControls } = PlaybackControls
 type excludedPlaybackControls =
   | typeof PlaybackControls.Play
   | typeof PlaybackControls.Prev5
   | typeof PlaybackControls.Prev10
   | typeof PlaybackControls.Ahead5
   | typeof PlaybackControls.Ahead10
+  | typeof PlaybackControls.Slower
+  | typeof PlaybackControls.Faster
 type PlaybackSeekControls = Exclude<PlaybackControls, excludedPlaybackControls>
 const PlaybackControlValues = Object.values(PlaybackControls)
 const PlaybackSeekControlValues = Object.values(PlaybackSeekControls)
@@ -164,36 +167,15 @@ function blockOwnPlaybackOverlay(videoEls: CustomHTMLVideoElement[]) {
   })
 }
 
-function videoControlKeyEvent(eventHandler: (e: KeyboardEvent) => void, videoData: VideoData) {
-  return (videoEl: CustomHTMLVideoElement) => (e: KeyboardEvent) => {
-    if (videoData.eventSyncData.isRunning || !e.shiftKey) { return }
-    if (e.key === '~') {
-      videoData.pipButton.click()
-      return
-    }
-    videoData.eventSyncData.isRunning = true;
-    if (videoEl.dataset.hasOwnPlaybackControls === "true") { return }
-    eventHandler(e)
-    switch (e.key) {
-      case '<':
-        videoEl.playbackRate -= videoData.playbackChangeRate
-        break
-      case '>':
-        videoEl.playbackRate += videoData.playbackChangeRate
-        break
-    }
-    setTimeout(() => {
-      videoData.eventSyncData.isRunning = false;
-    }, 250)
-  }
-}
 
 function setPipEvents(videoData: VideoData) {
   window.addEventListener('keyup', e => {
-    videoData.blockingKeyboardHandler(videoData.focusedVideo())(e)
+    if (!videoData.browserAgent.firefox && e.ctrlKey && e.shiftKey && e.key === '}') {
+      videoData.pipButton.click()
+    }
   });
   videoData.pipButton.addEventListener('click', async (_e: MouseEvent) => {
-    if (!('pictureInPictureElement' in document)) {
+    if (!(<any>document).pictureInPictureElement) {
       await (<any>videoData.focusedVideo()).requestPictureInPicture()
     } else {
       await (<any>document).exitPictureInPicture()
@@ -297,6 +279,66 @@ function playbackSeekByPercentage(video: CustomHTMLVideoElement, control: Playba
   video.currentTime = video.duration * pct
 }
 
+function playbackRateIncrease(video: CustomHTMLVideoElement, amount: number) {
+  video.playbackRate += amount
+}
+
+function playbackRateDecrease(video: CustomHTMLVideoElement, amount: number) {
+  const nextRate = video.playbackRate - amount
+  if (nextRate < 0.5) { return }
+  video.playbackRate = nextRate
+}
+
+
+function progressRatio(seekBar: HTMLElement, video: CustomHTMLVideoElement) {
+  return (e: MouseEvent) => {
+    const mouseClickPos = e.pageX - video.offsetLeft
+    return mouseClickPos / seekBar.offsetWidth
+  }
+}
+function secondsAsTime(seconds: number) {
+  const minutesWithSecs = seconds / 60
+  const minutes = Math.floor(minutesWithSecs)
+  const remainingSeconds = Math.floor((minutesWithSecs - minutes) * 60)
+  return `${minutes}:${remainingSeconds}`
+}
+
+function createSeekUi(video: CustomHTMLVideoElement) {
+  const container = document.createElement('div')
+  const seekBar = document.createElement('progress')
+  const tooltip = document.createElement('div')
+  container.appendChild(seekBar)
+  container.appendChild(tooltip)
+
+  const seekBarHeight = 5
+  const tooltipHeight = 30
+
+  seekBar.style.width = '100%'
+  seekBar.style.height = seekBarHeight + 'px'
+
+  seekBar.value = 0
+  seekBar.max = video.duration
+
+  tooltip.style.position = 'relative'
+  tooltip.style.top = '5px'
+  tooltip.style.left = '0'
+  tooltip.style.height = tooltipHeight + 'px'
+  tooltip.style.width = '30px'
+  tooltip.style.backgroundColor = '#888'
+  tooltip.style.color = '#fff'
+  tooltip.style.visibility = 'hidden'
+
+  tooltip.innerText = secondsAsTime(video.currentTime)
+
+  video.insertAdjacentElement('afterend', container);
+
+  return {
+    tooltip,
+    seekBar,
+    container
+  }
+}
+
 const setupHooks = [
   addSetupHook('playbackRateChange', (video, _videoData) => {
     const hasOwnOverlay = urlsWithOwnPlaybackRate
@@ -310,8 +352,6 @@ const setupHooks = [
     video.addEventListener('focus', _e => {
       videoData.focusedVideo = () => video
     })
-    video.addEventListener('keyup', videoData.blockingKeyboardHandler(video), true)
-    video.addEventListener('keydown', videoData.blockingKeyboardHandler(video), true)
   }),
   addSetupHook('windowPlayControls', (_video, videoData) => {
     window.addEventListener('keyup', e => {
@@ -335,6 +375,12 @@ const setupHooks = [
         case PlaybackControls.Ahead10:
           playbackForwardByN(focusedVideo, 10)
           break
+        case PlaybackControls.Slower:
+          playbackRateDecrease(focusedVideo, 0.25)
+          break;
+        case PlaybackControls.Faster:
+          playbackRateIncrease(focusedVideo, 0.25)
+          break;
         default:
           if (key in PlaybackSeekControls) {
             playbackSeekByPercentage(focusedVideo, key)
@@ -344,70 +390,37 @@ const setupHooks = [
     })
   }),
   addSetupHook("videoSeekTooltip", (video, videoData) => {
-    if (video.style.position === 'absolute') {
-      video.style.removeProperty('position')
-    }
-    const progressRatio = (e: MouseEvent) => {
-      const mouseClickPos = e.pageX - video.offsetLeft
-      return mouseClickPos / seekBar.offsetWidth
-    }
-    const secondsAsTime = (seconds: number) => {
-      const minutesWithSecs = seconds / 60
-      const minutes = Math.floor(minutesWithSecs)
-      const remainingSeconds = Math.floor((minutesWithSecs - minutes) * 60)
-      return `${minutes}:${remainingSeconds}`
-    }
-    const container = document.createElement('div')
-    const seekBar = document.createElement('progress')
-    const tooltip = document.createElement('div')
-    container.appendChild(seekBar)
-    container.appendChild(tooltip)
-
-    const seekBarHeight = 5
-    const tooltipHeight = 30
-
-    seekBar.style.width = '100%'
-    seekBar.style.height = seekBarHeight + 'px'
-
-    seekBar.value = 0
-    seekBar.max = video.duration
-
-    tooltip.style.position = 'relative'
-    tooltip.style.top = '5px'
-    tooltip.style.left = '0'
-    tooltip.style.height = tooltipHeight + 'px'
-    tooltip.style.width = '30px'
-    tooltip.style.backgroundColor = '#888'
-    tooltip.style.color = '#fff'
-    tooltip.style.visibility = 'hidden'
-
-    tooltip.innerText = secondsAsTime(video.currentTime)
-
-    let isSeeking = false
-    video.addEventListener('timeupdate', _ => {
-      if (isSeeking) return
-      seekBar.value = video.currentTime
+    video.addEventListener('loadeddata', _ => {
+      if (video.style.position === 'absolute') {
+        video.style.removeProperty('position')
+      }
+      const { tooltip, seekBar, container } = createSeekUi(video)
+      const ratioFn = progressRatio(seekBar, video)
+      let isSeeking = false
+      video.addEventListener('timeupdate', _ => {
+        if (isSeeking) return
+        seekBar.value = video.currentTime
+      })
+      seekBar.addEventListener('mouseenter', _ => {
+        tooltip.style.visibility = 'visible'
+      })
+      seekBar.addEventListener('mousemove', e => {
+        isSeeking = true
+        const seekBarProgress = ratioFn(e)
+        tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
+        tooltip.style.left = `${e.pageX}px`
+        seekBar.value = seekBar.max * seekBarProgress
+      })
+      seekBar.addEventListener('mouseup', e => {
+        const seekBarProgress = ratioFn(e)
+        seekBar.value = seekBar.max * seekBarProgress
+        video.currentTime = video.duration * seekBarProgress
+      })
+      seekBar.addEventListener('mouseleave', e => {
+        tooltip.style.visibility = 'hidden'
+        isSeeking = false
+      })
     })
-    seekBar.addEventListener('mouseenter', _ => {
-      tooltip.style.visibility = 'visible'
-    })
-    seekBar.addEventListener('mousemove', e => {
-      isSeeking = true
-      const seekBarProgress = progressRatio(e)
-      tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
-      tooltip.style.left = `${e.pageX}px`
-      seekBar.value = seekBar.max * seekBarProgress
-    })
-    seekBar.addEventListener('mouseup', e => {
-      const seekBarProgress = progressRatio(e)
-      seekBar.value = seekBar.max * seekBarProgress
-      video.currentTime = video.duration * seekBarProgress
-    })
-    seekBar.addEventListener('mouseleave', e => {
-      tooltip.style.visibility = 'hidden'
-      isSeeking = false
-    })
-    video.insertAdjacentElement('afterend', container)
   })
 ]
 
@@ -421,11 +434,6 @@ function createPip() {
     browserAgent: browserAgent(),
     focusedVideo: () => videoEls[0],
     eventSyncData: { isRunning: false },
-    get blockingKeyboardHandler() {
-      return videoControlKeyEvent(e => {
-        e.stopImmediatePropagation()
-      }, this)
-    }
 
   }
 
