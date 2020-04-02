@@ -1,3 +1,0 @@
-INFO  started: Metals version 0.8.3 in workspace '/data/Code/Userscripts'
-INFO  time: initialize in 2.45s
-WARN  no build tool detected in workspace '/data/Code/Userscripts'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
