@@ -238,10 +238,10 @@ function playbackRateControls(video: CustomHTMLVideoElement, playbackChangeRate:
 }
 
 function addSetupHook(propName: string, fn: (video: CustomHTMLVideoElement, data: VideoData) => void) {
-  return (video: CustomHTMLVideoElement, data: VideoData) => {
+  return (video: CustomHTMLVideoElement, videoData: VideoData) => {
     if (video.dataset[propName] === 'true') { return }
     video.dataset[propName] = 'true'
-    fn(video, data)
+    fn(video, videoData)
   }
 }
 
@@ -342,6 +342,72 @@ const setupHooks = [
           break;
       }
     })
+  }),
+  addSetupHook("videoSeekTooltip", (video, videoData) => {
+    if (video.style.position === 'absolute') {
+      video.style.removeProperty('position')
+    }
+    const progressRatio = (e: MouseEvent) => {
+      const mouseClickPos = e.pageX - video.offsetLeft
+      return mouseClickPos / seekBar.offsetWidth
+    }
+    const secondsAsTime = (seconds: number) => {
+      const minutesWithSecs = seconds / 60
+      const minutes = Math.floor(minutesWithSecs)
+      const remainingSeconds = Math.floor((minutesWithSecs - minutes) * 60)
+      return `${minutes}:${remainingSeconds}`
+    }
+    const container = document.createElement('div')
+    const seekBar = document.createElement('progress')
+    const tooltip = document.createElement('div')
+    container.appendChild(seekBar)
+    container.appendChild(tooltip)
+
+    const seekBarHeight = 5
+    const tooltipHeight = 30
+
+    seekBar.style.width = '100%'
+    seekBar.style.height = seekBarHeight + 'px'
+
+    seekBar.value = 0
+    seekBar.max = video.duration
+
+    tooltip.style.position = 'relative'
+    tooltip.style.top = '5px'
+    tooltip.style.left = '0'
+    tooltip.style.height = tooltipHeight + 'px'
+    tooltip.style.width = '30px'
+    tooltip.style.backgroundColor = '#888'
+    tooltip.style.color = '#fff'
+    tooltip.style.visibility = 'hidden'
+
+    tooltip.innerText = secondsAsTime(video.currentTime)
+
+    let isSeeking = false
+    video.addEventListener('timeupdate', _ => {
+      if (isSeeking) return
+      seekBar.value = video.currentTime
+    })
+    seekBar.addEventListener('mouseenter', _ => {
+      tooltip.style.visibility = 'visible'
+    })
+    seekBar.addEventListener('mousemove', e => {
+      isSeeking = true
+      const seekBarProgress = progressRatio(e)
+      tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
+      tooltip.style.left = `${e.pageX}px`
+      seekBar.value = seekBar.max * seekBarProgress
+    })
+    seekBar.addEventListener('mouseup', e => {
+      const seekBarProgress = progressRatio(e)
+      seekBar.value = seekBar.max * seekBarProgress
+      video.currentTime = video.duration * seekBarProgress
+    })
+    seekBar.addEventListener('mouseleave', e => {
+      tooltip.style.visibility = 'hidden'
+      isSeeking = false
+    })
+    video.insertAdjacentElement('afterend', container)
   })
 ]
 

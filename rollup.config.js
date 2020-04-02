@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-// import { terser } from "rollup-plugin-terser";
+import { terser } from "rollup-plugin-terser";
 
 const entryRoot = path.resolve(__dirname, 'src')
 const outputRoot = path.resolve(__dirname, 'dist')
@@ -20,7 +20,7 @@ export default srcFiles.map(file_ => {
   name = name.slice(0, name.length - 3)
   let outputPath = path.resolve(outputRoot, file_)
   outputPath = outputPath.substr(0, outputPath.lastIndexOf('.')) + '.js'
-  return {
+  const options = {
     input: path.resolve(entryRoot, file_),
     output: {
       file: outputPath,
@@ -32,11 +32,17 @@ export default srcFiles.map(file_ => {
     plugins: [
       resolve(),
       typescript(),
-      // terser({
-      //   output: {
-      //     comments: "all"
-      //   }
-      // }),
     ]
   }
+  if (file_.endsWith('.ts')) {
+    options.plugins.push(
+      terser({
+        output: {
+          comments: "all"
+        }
+      }),
+    )
+  }
+
+  return options
 });
