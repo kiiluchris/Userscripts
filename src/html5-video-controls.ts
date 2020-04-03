@@ -53,6 +53,7 @@ const PlaybackControlValues = Object.values(PlaybackControls)
 const PlaybackSeekControlValues = Object.values(PlaybackSeekControls)
 export { }
 
+// import { sendWindowMessage, getWindowMessage } from './shared/extension-sync.js'
 
 // ==UserScript==
 // @name         HTML Video Controls
@@ -344,7 +345,7 @@ function createSeekUi(video: CustomHTMLVideoElement) {
 }
 
 const setupHooks = [
-  addSetupHookExceptUrls('playbackRateChange', [
+  addSetupHookExceptUrls('playbackRateChangeOverlay', [
     /www.youtube.com/
   ], (video, _videoData) => {
     setupPlaybackRate(video)
@@ -389,7 +390,7 @@ const setupHooks = [
           playbackRateIncrease(focusedVideo, 0.25)
           break;
         default:
-          if (key in PlaybackSeekControls) {
+          if (PlaybackSeekControlValues.includes(key)) {
             playbackSeekByPercentage(focusedVideo, key)
           }
           break;
