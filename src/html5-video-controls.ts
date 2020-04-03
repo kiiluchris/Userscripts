@@ -147,9 +147,6 @@ function setupPlaybackRate(videoEl: CustomHTMLVideoElement): HTMLDivElement {
 }
 
 const youtubeRegex = /www.youtube.com/
-const urlsWithOwnPlaybackRate = [
-  /www.youtube.com/
-]
 
 function youtubeNavigationMonitor() {
   if (!youtubeRegex.test(window.location.href)) return
@@ -225,6 +222,13 @@ function addSetupHook(propName: string, fn: (video: CustomHTMLVideoElement, data
     video.dataset[propName] = 'true'
     fn(video, videoData)
   }
+}
+
+function addSetupHookExceptUrls(propName: string, exprs: RegExp[], fn: (video: CustomHTMLVideoElement, data: VideoData) => void): (video: CustomHTMLVideoElement, videoData: VideoData) => void {
+  if (exprs.some(re => re.test(window.location.href))) {
+    return (video, data) => { }
+  }
+  return addSetupHook(propName, fn)
 }
 
 function createPipButton(): HTMLButtonElement {
@@ -338,15 +342,12 @@ function createSeekUi(video: CustomHTMLVideoElement) {
     container
   }
 }
-const urlsWithOwnControls = [
-  /www.youtube.com/
-]
 
 const setupHooks = [
-  addSetupHook('playbackRateChange', (video, _videoData) => {
-    const hasOwnOverlay = urlsWithOwnPlaybackRate
-      .some(re => re.test(window.location.href))
-    !hasOwnOverlay && setupPlaybackRate(video)
+  addSetupHookExceptUrls('playbackRateChange', [
+    /www.youtube.com/
+  ], (video, _videoData) => {
+    setupPlaybackRate(video)
   }),
   addSetupHook('playbackRateChangeUi', (video, videoData) => {
     playbackRateControls(video, videoData.playbackChangeRate);
@@ -356,10 +357,10 @@ const setupHooks = [
       videoData.focusedVideo = () => video
     })
   }),
-  addSetupHook('windowPlayControls', (_video, videoData) => {
-    if (urlsWithOwnControls.some(re => re.test(window.location.href))) {
-      return
-    }
+  addSetupHookExceptUrls('windowPlayControls', [
+    /www.youtube.com/,
+    /vimeo.com/,
+  ], (_video, videoData) => {
     window.addEventListener('keyup', e => {
       const key = e.key.toUpperCase() as PlaybackControls
       if (!PlaybackControlValues.includes(key)) { return }
