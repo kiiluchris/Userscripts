@@ -1,21 +1,44 @@
 const EXTENSION_NAME = 'Comic Manager';
 
-const getWindowMessage = condition => new Promise((res, rej) => {
-  if (!condition) return rej("No condition function given");
-  window.addEventListener("message", ({ data: { extension, data } }) => {
-    if (extension === EXTENSION_NAME && condition(data)) {
-      console.log(data);
-      res(data);
+const setWindowMessageListenerOfType = (messageType = null) => condition => fn => {
+  if (!condition) throw "No condition function given";
+  const listener = ({ data: { extension, messageType: m, data } }) => {
+    if (extension === EXTENSION_NAME && m == messageType && condition(data)) {
+      fn(data, listener);
     }
+  };
+  window.addEventListener("message", listener);
+};
+
+
+const getWindowMessageOfType = (messageType = null) => condition => new Promise((res, rej) => {
+  setWindowMessageListenerOfType(messageType)(condition)((data, listener) => {
+    console.log(data);
+    res(data);
+    window.removeEventListener("message", listener);
   });
 });
 
-const sendWindowMessage = (data, { mWindow = window, target = "*" } = {}) => {
+const getWindowMessage = getWindowMessageOfType();
+
+const sendWindowMessageWithType = (messageType = null) => (data, { mWindow = window, target = "*" } = {}) => {
   mWindow.postMessage({
     extension: EXTENSION_NAME,
-    data
+    messageType,
+    data,
   }, target);
 };
+
+const sendWindowMessage = sendWindowMessageWithType(null);
+
+const windowMessaging = ["playback"].reduce((acc, key) => {
+  acc[key] = {
+    addListener: setWindowMessageListenerOfType(key),
+    sendMessage: sendWindowMessageWithType(key),
+    once: getWindowMessageOfType(key)
+  };
+  return acc
+}, {});
 
 // ==UserScript==
 // @name         QT Cannon Fodder's Record of Attacks Open From Comments

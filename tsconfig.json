@@ -4,7 +4,7 @@
     "noImplicitAny": true,
     "removeComments": false,
     "preserveConstEnums": true,
-    "sourceMap": true,
+    // "sourceMap": true,
     "target": "ES6",
     "importHelpers": false,
     "noEmitHelpers": true,

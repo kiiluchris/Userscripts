@@ -1,5 +1,42 @@
 const EXTENSION_NAME = 'Comic Manager';
 
+const setWindowMessageListenerOfType = (messageType = null) => condition => fn => {
+  if (!condition) throw "No condition function given";
+  const listener = ({ data: { extension, messageType: m, data } }) => {
+    if (extension === EXTENSION_NAME && m == messageType && condition(data)) {
+      fn(data, listener);
+    }
+  };
+  window.addEventListener("message", listener);
+};
+
+
+const getWindowMessageOfType = (messageType = null) => condition => new Promise((res, rej) => {
+  setWindowMessageListenerOfType(messageType)(condition)((data, listener) => {
+    console.log(data);
+    res(data);
+    window.removeEventListener("message", listener);
+  });
+});
+
+const sendWindowMessageWithType = (messageType = null) => (data, { mWindow = window, target = "*" } = {}) => {
+  mWindow.postMessage({
+    extension: EXTENSION_NAME,
+    messageType,
+    data,
+  }, target);
+};
+
+const windowMessaging = ["playback"].reduce((acc, key) => {
+  acc[key] = {
+    addListener: setWindowMessageListenerOfType(key),
+    sendMessage: sendWindowMessageWithType(key),
+    once: getWindowMessageOfType(key)
+  };
+  return acc
+}, {});
+
+
 const savePage = async (url) => {
   let timeoutID;
   const isPageSaved = await new Promise(res => {

@@ -1,59 +1,15 @@
-interface CustomHTMLVideoElement extends HTMLVideoElement {
-  playbackRateOverlay: HTMLElement
-}
+import {
+  CustomHTMLVideoElement, PlaybackSeekControls,
+  PlaybackControlValues, PlaybackSeekControlValues,
+  BrowserAgent, VideoData, PlaybackControls
+} from './types/playback'
 
-interface SyncData {
-  isRunning: boolean
-}
-
-interface VideoData {
-  browserAgent: BrowserAgent,
-  focusedVideo: () => CustomHTMLVideoElement,
-  playbackChangeRate: number,
-  pipButton: HTMLButtonElement,
-  eventSyncData: SyncData,
-}
-
-interface BrowserAgent {
-  chrome: boolean,
-  firefox: boolean,
-}
-
-
-enum PlaybackControls {
-  Play = "K",
-  Ahead5 = "L",
-  Prev5 = "J",
-  Ahead10 = ";",
-  Prev10 = "H",
-  Slower = ",",
-  Faster = ".",
-  Seek0 = "0",
-  Seek1 = "1",
-  Seek2 = "2",
-  Seek3 = "3",
-  Seek4 = "4",
-  Seek5 = "5",
-  Seek6 = "6",
-  Seek7 = "7",
-  Seek8 = "8",
-  Seek9 = "9",
-}
-const { Play, Prev10, Prev5, Ahead10, Ahead5, Slower, Faster, ...PlaybackSeekControls } = PlaybackControls
-type excludedPlaybackControls =
-  | typeof PlaybackControls.Play
-  | typeof PlaybackControls.Prev5
-  | typeof PlaybackControls.Prev10
-  | typeof PlaybackControls.Ahead5
-  | typeof PlaybackControls.Ahead10
-  | typeof PlaybackControls.Slower
-  | typeof PlaybackControls.Faster
-type PlaybackSeekControls = Exclude<PlaybackControls, excludedPlaybackControls>
-const PlaybackControlValues = Object.values(PlaybackControls)
-const PlaybackSeekControlValues = Object.values(PlaybackSeekControls)
 export { }
 
-// import { sendWindowMessage, getWindowMessage } from './shared/extension-sync.js'
+import {
+  sendPlaybackWindowMessage, setWindowMessageListener,
+  PlaybackControlsData, windowMessaging
+} from './shared/extension-sync.js'
 
 // ==UserScript==
 // @name         HTML Video Controls
@@ -356,6 +312,7 @@ const setupHooks = [
   addSetupHook('videoKeyboardEvents', (video, videoData) => {
     video.addEventListener('focus', _e => {
       videoData.focusedVideo = () => video
+      syncFocusedFrameWithParent(false)
     })
   }),
   addSetupHookExceptUrls('windowPlayControls', [
@@ -463,6 +420,29 @@ function createPipAfterTime(seconds: number): Promise<CustomHTMLVideoElement[]> 
   })
 }
 
+function syncFocusedFrameWithParent(isFirstSync: boolean) {
+  if (window.parent === window) { return }
+  windowMessaging.playback.sendMessage({
+    url: window.location.href,
+    isFirstSync,
+  }, {
+    mWindow: window.parent,
+  })
+}
+
+function setupParentWindowListener() {
+  if (window.parent === window) { return }
+  syncFocusedFrameWithParent(true)
+  windowMessaging.playback.addListener(
+    ({ url, keyboard }) => url === window.location.href && !!keyboard
+  )((data, _listener) => {
+    const evt = new KeyboardEvent("keyup", {
+      ...data.keyboard
+    })
+    window.dispatchEvent(evt)
+  })
+}
+
 (async function () {
   'use strict';
   const printPip = (msg: string, ...args: any[]) => {
@@ -476,8 +456,8 @@ function createPipAfterTime(seconds: number): Promise<CustomHTMLVideoElement[]> 
   for (let i = 0; i <= n; i++) {
     const pipVideos = await createPipAfterTime(1);
     if (pipVideos.length) {
+      setupParentWindowListener()
       return printPip("PiP activated", "Related Videos", pipVideos);
     }
   }
-  printPip("PiP not activated")
 })().catch(console.error);

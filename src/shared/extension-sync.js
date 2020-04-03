@@ -8,22 +8,47 @@ export const getMessageFromExtension = status => new Promise(res => {
   });
 });
 
-export const getWindowMessage = condition => new Promise((res, rej) => {
-  if (!condition) return rej("No condition function given");
-  window.addEventListener("message", ({ data: { extension, data } }) => {
-    if (extension === EXTENSION_NAME && condition(data)) {
-      console.log(data)
-      res(data);
+export const setWindowMessageListenerOfType = (messageType = null) => condition => fn => {
+  if (!condition) throw "No condition function given";
+  const listener = ({ data: { extension, messageType: m, data } }) => {
+    if (extension === EXTENSION_NAME && m == messageType && condition(data)) {
+      fn(data, listener)
     }
-  });
-});
+  }
+  window.addEventListener("message", listener);
+}
 
-export const sendWindowMessage = (data, { mWindow = window, target = "*" } = {}) => {
+export const setWindowMessageListener = setWindowMessageListenerOfType()
+
+
+export const getWindowMessageOfType = (messageType = null) => condition => new Promise((res, rej) => {
+  setWindowMessageListenerOfType(messageType)(condition)((data, listener) => {
+    console.log(data)
+    res(data)
+    window.removeEventListener("message", listener)
+  })
+})
+
+export const getWindowMessage = getWindowMessageOfType()
+
+export const sendWindowMessageWithType = (messageType = null) => (data, { mWindow = window, target = "*" } = {}) => {
   mWindow.postMessage({
     extension: EXTENSION_NAME,
-    data
+    messageType,
+    data,
   }, target);
 };
+
+export const sendWindowMessage = sendWindowMessageWithType(null)
+
+export const windowMessaging = ["playback"].reduce((acc, key) => {
+  acc[key] = {
+    addListener: setWindowMessageListenerOfType(key),
+    sendMessage: sendWindowMessageWithType(key),
+    once: getWindowMessageOfType(key)
+  }
+  return acc
+}, {})
 
 export const windowLoaded = () => new Promise(res => {
   if (document.readyState === 'complete') return res(false)
