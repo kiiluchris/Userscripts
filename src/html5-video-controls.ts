@@ -263,10 +263,10 @@ function playbackRateDecrease(video: CustomHTMLVideoElement, amount: number) {
 }
 
 
-function progressRatio(seekBar: HTMLElement, video: CustomHTMLVideoElement) {
+function progressRatio(seekbar: HTMLElement, video: CustomHTMLVideoElement) {
   return (e: MouseEvent) => {
     const mouseClickPos = e.pageX - video.offsetLeft
-    return mouseClickPos / seekBar.offsetWidth
+    return mouseClickPos / seekbar.offsetWidth
   }
 }
 function secondsAsTime(seconds: number) {
@@ -278,22 +278,22 @@ function secondsAsTime(seconds: number) {
 
 function createSeekUi(video: CustomHTMLVideoElement) {
   const container = document.createElement('div')
-  const seekBar = document.createElement('progress')
+  const seekbar = document.createElement('progress')
   const tooltip = document.createElement('div')
-  container.appendChild(seekBar)
+  container.appendChild(seekbar)
   container.appendChild(tooltip)
 
-  const seekBarHeight = 5
+  const seekbarHeight = 5
   const tooltipHeight = 30
 
   container.style.position = 'relative'
   container.style.top = video.offsetHeight + 'px'
 
-  seekBar.style.width = '100%'
-  seekBar.style.height = seekBarHeight + 'px'
+  seekbar.style.width = '100%'
+  seekbar.style.height = seekbarHeight + 'px'
 
-  seekBar.value = 0
-  seekBar.max = video.duration
+  seekbar.value = 0
+  seekbar.max = video.duration
 
   tooltip.style.position = 'relative'
   tooltip.style.top = '5px'
@@ -310,8 +310,8 @@ function createSeekUi(video: CustomHTMLVideoElement) {
 
   return {
     tooltip,
-    seekBar,
-    container
+    seekbar,
+    seekbarContainer: container
   }
 }
 
@@ -332,34 +332,38 @@ const setupHooks = [
   }),
   addSetupHook("videoSeekTooltip", (video, videoData) => {
     video.addEventListener('loadeddata', _ => {
-      const { tooltip, seekBar, container } = createSeekUi(video)
-      video.seekbarEl = seekBar
+      const { tooltip, seekbar, seekbarContainer } = createSeekUi(video)
+      video.seekbarEl = seekbar
       video.seekbarTooltipEl = tooltip
-      const ratioFn = progressRatio(seekBar, video)
+      const ratioFn = progressRatio(seekbar, video)
       let isSeeking = false
       video.addEventListener('timeupdate', _ => {
         if (isSeeking) return
-        seekBar.value = video.currentTime
+        seekbar.value = video.currentTime
       })
       video.addEventListener("fullscreenchange", e => {
-        seekBar.style.visibility = (!!document.fullscreenElement) ? "hidden" : "visible"
+        if (!!document.fullscreenElement) {
+          seekbarContainer.style.top = "0"
+        } else {
+          seekbarContainer.style.top = video.offsetHeight + "px"
+        }
       })
-      seekBar.addEventListener('mouseenter', _ => {
+      seekbar.addEventListener('mouseenter', _ => {
         tooltip.style.visibility = 'visible'
       })
-      seekBar.addEventListener('mousemove', e => {
+      seekbar.addEventListener('mousemove', e => {
         isSeeking = true
-        const seekBarProgress = ratioFn(e)
-        tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
+        const seekbarProgress = ratioFn(e)
+        tooltip.innerText = secondsAsTime(video.duration * seekbarProgress)
         tooltip.style.left = `${e.pageX}px`
-        seekBar.value = seekBar.max * seekBarProgress
+        seekbar.value = seekbar.max * seekbarProgress
       })
-      seekBar.addEventListener('mouseup', e => {
-        const seekBarProgress = ratioFn(e)
-        seekBar.value = seekBar.max * seekBarProgress
-        video.currentTime = video.duration * seekBarProgress
+      seekbar.addEventListener('mouseup', e => {
+        const seekbarProgress = ratioFn(e)
+        seekbar.value = seekbar.max * seekbarProgress
+        video.currentTime = video.duration * seekbarProgress
       })
-      seekBar.addEventListener('mouseleave', e => {
+      seekbar.addEventListener('mouseleave', e => {
         tooltip.style.visibility = 'hidden'
         isSeeking = false
       })
@@ -382,10 +386,10 @@ const windowScopedSetupEvents = [
   ], (videoData) => {
     window.addEventListener('keyup', e => {
       const key = e.key.toUpperCase() as PlaybackControls
-      console.log(key, PlaybackControls)
       if (!PlaybackControlValues.includes(key)) { return }
       const focusedVideo = videoData.focusedVideo()
       if (focusedVideo.readyState !== 4) { return }
+      e.stopImmediatePropagation()
       switch (key) {
         case PlaybackControls.Play:
           playbackPlayPause(focusedVideo)

@@ -42,7 +42,7 @@ export enum PlaybackControls {
   Seek7 = "7",
   Seek8 = "8",
   Seek9 = "9",
-  FullScreen = "F",
+  FullScreen = "`",
 }
 export const { Play, Prev10, Prev5, Ahead10, Ahead5, Slower, Faster, FullScreen, ...PlaybackSeekControls } = PlaybackControls
 export type excludedPlaybackControls =
