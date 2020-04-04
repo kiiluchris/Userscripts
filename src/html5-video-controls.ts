@@ -68,9 +68,7 @@ function setOverlayStyles(el: HTMLElement, width: number, height: number) {
   el.dataset.height = height + ''
 }
 
-function setOverlayEvents(el: HTMLElement, videoEl: CustomHTMLVideoElement, overlayEventHandler: (event: Event) => void) {
-  document.addEventListener('fullscreenchange', overlayEventHandler)
-  window.addEventListener('resize', overlayEventHandler)
+function setOverlayEvents(el: HTMLElement, videoEl: CustomHTMLVideoElement) {
   let playbackTimeoutId: NodeJS.Timeout = null;
   videoEl.addEventListener('ratechange', _e => {
     console.log(`New Video Rate: ${videoEl.playbackRate}`)
@@ -95,10 +93,8 @@ function setupPlaybackRate(videoEl: CustomHTMLVideoElement): HTMLDivElement {
   setOverlayStyles(el, width, height)
   setOverlayPosition(videoEl)
   videoEl.insertAdjacentElement('afterend', el)
-  videoEl.playbackRateOverlay = el
-  setOverlayEvents(el, videoEl, _e => {
-    setOverlayPosition(videoEl)
-  })
+  videoEl.playbackRateOverlayEl = el
+  setOverlayEvents(el, videoEl)
 
   return el
 }
@@ -146,8 +142,6 @@ function addClickListener(el: HTMLElement, fn: (event: MouseEvent) => void) {
 }
 
 function playbackRateControls(video: CustomHTMLVideoElement, playbackChangeRate: number) {
-  if (video.dataset.controlsAdded === 'true') { return }
-  video.dataset.controlsAdded = 'true'
   const overlay = document.createElement('div')
   const slower = document.createElement('p')
   const faster = document.createElement('p')
@@ -164,6 +158,9 @@ function playbackRateControls(video: CustomHTMLVideoElement, playbackChangeRate:
   overlay.appendChild(slower)
   overlay.appendChild(faster)
   video.parentElement.appendChild(overlay)
+  video.slowPlaybackEl = slower
+  video.hastenPlaybackEl = faster
+
   addClickListener(slower, _e => {
     video.playbackRate -= playbackChangeRate
   })
@@ -180,12 +177,27 @@ function addSetupHook(propName: string, fn: (video: CustomHTMLVideoElement, data
     fn(video, videoData)
   }
 }
+function addWindowSetupHook(_propName: string, fn: (data: VideoData) => void) {
+  let hasRun = false
+  return (videoData: VideoData) => {
+    if (hasRun) return
+    hasRun = true
+    fn(videoData)
+  }
+}
 
 function addSetupHookExceptUrls(propName: string, exprs: RegExp[], fn: (video: CustomHTMLVideoElement, data: VideoData) => void): (video: CustomHTMLVideoElement, videoData: VideoData) => void {
   if (exprs.some(re => re.test(window.location.href))) {
-    return (video, data) => { }
+    return (_video, _data) => { }
   }
   return addSetupHook(propName, fn)
+}
+
+function addWindowSetupHookExceptUrls(propName: string, exprs: RegExp[], fn: (data: VideoData) => void): (videoData: VideoData) => void {
+  if (exprs.some(re => re.test(window.location.href))) {
+    return (_data) => { }
+  }
+  return addWindowSetupHook(propName, fn)
 }
 
 function createPipButton(): HTMLButtonElement {
@@ -274,6 +286,9 @@ function createSeekUi(video: CustomHTMLVideoElement) {
   const seekBarHeight = 5
   const tooltipHeight = 30
 
+  container.style.position = 'relative'
+  container.style.top = video.offsetHeight + 'px'
+
   seekBar.style.width = '100%'
   seekBar.style.height = seekBarHeight + 'px'
 
@@ -315,12 +330,59 @@ const setupHooks = [
       syncFocusedFrameWithParent(false)
     })
   }),
-  addSetupHookExceptUrls('windowPlayControls', [
+  addSetupHook("videoSeekTooltip", (video, videoData) => {
+    video.addEventListener('loadeddata', _ => {
+      const { tooltip, seekBar, container } = createSeekUi(video)
+      video.seekbarEl = seekBar
+      video.seekbarTooltipEl = tooltip
+      const ratioFn = progressRatio(seekBar, video)
+      let isSeeking = false
+      video.addEventListener('timeupdate', _ => {
+        if (isSeeking) return
+        seekBar.value = video.currentTime
+      })
+      video.addEventListener("fullscreenchange", e => {
+        seekBar.style.visibility = (!!document.fullscreenElement) ? "hidden" : "visible"
+      })
+      seekBar.addEventListener('mouseenter', _ => {
+        tooltip.style.visibility = 'visible'
+      })
+      seekBar.addEventListener('mousemove', e => {
+        isSeeking = true
+        const seekBarProgress = ratioFn(e)
+        tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
+        tooltip.style.left = `${e.pageX}px`
+        seekBar.value = seekBar.max * seekBarProgress
+      })
+      seekBar.addEventListener('mouseup', e => {
+        const seekBarProgress = ratioFn(e)
+        seekBar.value = seekBar.max * seekBarProgress
+        video.currentTime = video.duration * seekBarProgress
+      })
+      seekBar.addEventListener('mouseleave', e => {
+        tooltip.style.visibility = 'hidden'
+        isSeeking = false
+      })
+    })
+  })
+]
+
+const windowScopedSetupEvents = [
+  addWindowSetupHook('windowEvents', (videoData) => {
+    const overlayEventHandler = (_e: Event) => {
+      const videoEl = videoData.focusedVideo()
+      setOverlayPositionSetup(videoEl.playbackRateOverlayEl)(videoEl)
+    }
+    document.addEventListener('fullscreenchange', overlayEventHandler)
+    window.addEventListener('resize', overlayEventHandler)
+  }),
+  addWindowSetupHookExceptUrls('windowPlayControls', [
     /www.youtube.com/,
     /vimeo.com/,
-  ], (_video, videoData) => {
+  ], (videoData) => {
     window.addEventListener('keyup', e => {
       const key = e.key.toUpperCase() as PlaybackControls
+      console.log(key, PlaybackControls)
       if (!PlaybackControlValues.includes(key)) { return }
       const focusedVideo = videoData.focusedVideo()
       if (focusedVideo.readyState !== 4) { return }
@@ -346,6 +408,13 @@ const setupHooks = [
         case PlaybackControls.Faster:
           playbackRateIncrease(focusedVideo, 0.25)
           break;
+        case PlaybackControls.FullScreen:
+          if (!document.fullscreenElement) {
+            focusedVideo.requestFullscreen()
+          } else {
+            document.exitFullscreen()
+          }
+          break;
         default:
           if (PlaybackSeekControlValues.includes(key)) {
             playbackSeekByPercentage(focusedVideo, key)
@@ -354,39 +423,6 @@ const setupHooks = [
       }
     })
   }),
-  addSetupHook("videoSeekTooltip", (video, videoData) => {
-    video.addEventListener('loadeddata', _ => {
-      if (video.style.position === 'absolute') {
-        video.style.removeProperty('position')
-      }
-      const { tooltip, seekBar, container } = createSeekUi(video)
-      const ratioFn = progressRatio(seekBar, video)
-      let isSeeking = false
-      video.addEventListener('timeupdate', _ => {
-        if (isSeeking) return
-        seekBar.value = video.currentTime
-      })
-      seekBar.addEventListener('mouseenter', _ => {
-        tooltip.style.visibility = 'visible'
-      })
-      seekBar.addEventListener('mousemove', e => {
-        isSeeking = true
-        const seekBarProgress = ratioFn(e)
-        tooltip.innerText = secondsAsTime(video.duration * seekBarProgress)
-        tooltip.style.left = `${e.pageX}px`
-        seekBar.value = seekBar.max * seekBarProgress
-      })
-      seekBar.addEventListener('mouseup', e => {
-        const seekBarProgress = ratioFn(e)
-        seekBar.value = seekBar.max * seekBarProgress
-        video.currentTime = video.duration * seekBarProgress
-      })
-      seekBar.addEventListener('mouseleave', e => {
-        tooltip.style.visibility = 'hidden'
-        isSeeking = false
-      })
-    })
-  })
 ]
 
 function createPip() {
@@ -406,6 +442,7 @@ function createPip() {
     setupHooks.forEach(hook => hook(el, videoData))
   })
 
+  windowScopedSetupEvents.forEach(hook => hook(videoData))
   setPipEvents(videoData)
   youtubeNavigationMonitor()
   blockOwnPlaybackOverlay(videoEls)
@@ -448,7 +485,7 @@ function setupParentWindowListener() {
   const printPip = (msg: string, ...args: any[]) => {
     console.group(`Pip Userscript: ${window.location.href}`)
     console.log(`Message: ${msg}`)
-    console.log(...args)
+    args.length && console.log(...args)
     console.groupEnd()
   };
 
@@ -460,4 +497,5 @@ function setupParentWindowListener() {
       return printPip("PiP activated", "Related Videos", pipVideos);
     }
   }
+  printPip("PiP inactive", "No videos found")
 })().catch(console.error);

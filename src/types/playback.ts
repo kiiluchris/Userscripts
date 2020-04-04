@@ -1,5 +1,9 @@
 export interface CustomHTMLVideoElement extends HTMLVideoElement {
-  playbackRateOverlay: HTMLElement
+  playbackRateOverlayEl: HTMLElement,
+  slowPlaybackEl: HTMLElement,
+  hastenPlaybackEl: HTMLElement,
+  seekbarEl: HTMLElement,
+  seekbarTooltipEl: HTMLElement,
 }
 
 export interface SyncData {
@@ -38,8 +42,9 @@ export enum PlaybackControls {
   Seek7 = "7",
   Seek8 = "8",
   Seek9 = "9",
+  FullScreen = "F",
 }
-export const { Play, Prev10, Prev5, Ahead10, Ahead5, Slower, Faster, ...PlaybackSeekControls } = PlaybackControls
+export const { Play, Prev10, Prev5, Ahead10, Ahead5, Slower, Faster, FullScreen, ...PlaybackSeekControls } = PlaybackControls
 export type excludedPlaybackControls =
   | typeof PlaybackControls.Play
   | typeof PlaybackControls.Prev5
@@ -48,6 +53,7 @@ export type excludedPlaybackControls =
   | typeof PlaybackControls.Ahead10
   | typeof PlaybackControls.Slower
   | typeof PlaybackControls.Faster
+  | typeof PlaybackControls.FullScreen
 export type PlaybackSeekControls = Exclude<PlaybackControls, excludedPlaybackControls>
 export const PlaybackControlValues = Object.values(PlaybackControls)
 export const PlaybackSeekControlValues = Object.values(PlaybackSeekControls)
