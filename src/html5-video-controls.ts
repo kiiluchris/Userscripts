@@ -286,16 +286,14 @@ function createSeekUi(video: CustomHTMLVideoElement) {
   const seekbarHeight = 5
   const tooltipHeight = 30
 
+  container.style.display = 'none' // Remove to display seekbar
   container.style.position = 'relative'
   container.style.top = video.offsetHeight + 'px'
 
   seekbar.style.width = '100%'
   seekbar.style.height = seekbarHeight + 'px'
 
-  seekbar.value = 0
-  seekbar.max = video.duration
-
-  tooltip.style.position = 'relative'
+  tooltip.style.position = 'absolute'
   tooltip.style.top = '5px'
   tooltip.style.left = '0'
   tooltip.style.height = tooltipHeight + 'px'
@@ -304,15 +302,24 @@ function createSeekUi(video: CustomHTMLVideoElement) {
   tooltip.style.color = '#fff'
   tooltip.style.visibility = 'hidden'
 
-  tooltip.innerText = secondsAsTime(video.currentTime)
 
   video.insertAdjacentElement('afterend', container);
+
+  video.seekbarEl = seekbar
+  video.seekbarTooltipEl = tooltip
+
 
   return {
     tooltip,
     seekbar,
     seekbarContainer: container
   }
+}
+
+function setSeekUiValues(video: CustomHTMLVideoElement) {
+  (<HTMLProgressElement>video.seekbarEl).value = 0;
+  (<HTMLProgressElement>video.seekbarEl).max = video.duration;
+  video.seekbarTooltipEl.innerText = secondsAsTime(video.currentTime);
 }
 
 const setupHooks = [
@@ -331,42 +338,35 @@ const setupHooks = [
     })
   }),
   addSetupHook("videoSeekTooltip", (video, videoData) => {
+    const { tooltip, seekbar, seekbarContainer } = createSeekUi(video)
+    let ratioFn: (e: MouseEvent) => number = _ => 0
     video.addEventListener('loadeddata', _ => {
-      const { tooltip, seekbar, seekbarContainer } = createSeekUi(video)
-      video.seekbarEl = seekbar
-      video.seekbarTooltipEl = tooltip
-      const ratioFn = progressRatio(seekbar, video)
-      let isSeeking = false
-      video.addEventListener('timeupdate', _ => {
-        if (isSeeking) return
-        seekbar.value = video.currentTime
-      })
-      video.addEventListener("fullscreenchange", e => {
-        if (!!document.fullscreenElement) {
-          seekbarContainer.style.top = "0"
-        } else {
-          seekbarContainer.style.top = video.offsetHeight + "px"
-        }
-      })
-      seekbar.addEventListener('mouseenter', _ => {
-        tooltip.style.visibility = 'visible'
-      })
-      seekbar.addEventListener('mousemove', e => {
-        isSeeking = true
-        const seekbarProgress = ratioFn(e)
-        tooltip.innerText = secondsAsTime(video.duration * seekbarProgress)
-        tooltip.style.left = `${e.pageX}px`
-        seekbar.value = seekbar.max * seekbarProgress
-      })
-      seekbar.addEventListener('mouseup', e => {
-        const seekbarProgress = ratioFn(e)
-        seekbar.value = seekbar.max * seekbarProgress
-        video.currentTime = video.duration * seekbarProgress
-      })
-      seekbar.addEventListener('mouseleave', e => {
-        tooltip.style.visibility = 'hidden'
-        isSeeking = false
-      })
+      setSeekUiValues(video)
+      ratioFn = progressRatio(seekbar, video)
+    })
+    let isSeeking = false
+    video.addEventListener('timeupdate', _ => {
+      if (isSeeking) return
+      seekbar.value = video.currentTime
+    })
+    seekbar.addEventListener('mouseenter', _ => {
+      tooltip.style.visibility = 'visible'
+    })
+    seekbar.addEventListener('mousemove', e => {
+      isSeeking = true
+      const seekbarProgress = ratioFn(e)
+      tooltip.innerText = secondsAsTime(video.duration * seekbarProgress)
+      tooltip.style.left = `${e.pageX}px`
+      seekbar.value = seekbar.max * seekbarProgress
+    })
+    seekbar.addEventListener('mouseup', e => {
+      const seekbarProgress = ratioFn(e)
+      seekbar.value = seekbar.max * seekbarProgress
+      video.currentTime = video.duration * seekbarProgress
+    })
+    seekbar.addEventListener('mouseleave', e => {
+      tooltip.style.visibility = 'hidden'
+      isSeeking = false
     })
   })
 ]
@@ -376,6 +376,11 @@ const windowScopedSetupEvents = [
     const overlayEventHandler = (_e: Event) => {
       const videoEl = videoData.focusedVideo()
       setOverlayPositionSetup(videoEl.playbackRateOverlayEl)(videoEl)
+      if (!!document.fullscreenElement) {
+        videoEl.seekbarEl.parentElement.style.top = "0"
+      } else {
+        videoEl.seekbarEl.parentElement.style.top = videoEl.offsetHeight + "px"
+      }
     }
     document.addEventListener('fullscreenchange', overlayEventHandler)
     window.addEventListener('resize', overlayEventHandler)
