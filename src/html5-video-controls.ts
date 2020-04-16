@@ -8,7 +8,7 @@ export { }
 
 import {
   sendPlaybackWindowMessage, setWindowMessageListener,
-  PlaybackControlsData, windowMessaging
+  PlaybackControlsData, windowMessaging, KeyboardData
 } from './shared/extension-sync.js'
 
 // ==UserScript==
@@ -18,7 +18,7 @@ import {
 // @description  try to take over the world!
 // @author       kiiluchris
 // @match        http*://**/*
-// @grant        none
+// @grant        unsafeWindow
 // ==/UserScript==
 
 function browserAgent(): BrowserAgent {
@@ -390,49 +390,68 @@ const windowScopedSetupEvents = [
     /vimeo.com/,
   ], (videoData) => {
     window.addEventListener('keyup', e => {
-      const key = e.key.toUpperCase() as PlaybackControls
-      if (!PlaybackControlValues.includes(key)) { return }
       const focusedVideo = videoData.focusedVideo()
       if (focusedVideo.readyState !== 4) { return }
       e.stopImmediatePropagation()
-      switch (key) {
-        case PlaybackControls.Play:
-          playbackPlayPause(focusedVideo)
-          break
-        case PlaybackControls.Prev5:
-          playbackReverseByN(focusedVideo, 5)
-          break
-        case PlaybackControls.Prev10:
-          playbackReverseByN(focusedVideo, 10)
-          break
-        case PlaybackControls.Ahead5:
-          playbackForwardByN(focusedVideo, 5)
-          break
-        case PlaybackControls.Ahead10:
-          playbackForwardByN(focusedVideo, 10)
-          break
-        case PlaybackControls.Slower:
-          playbackRateDecrease(focusedVideo, 0.25)
-          break;
-        case PlaybackControls.Faster:
-          playbackRateIncrease(focusedVideo, 0.25)
-          break;
-        case PlaybackControls.FullScreen:
-          if (!document.fullscreenElement) {
-            focusedVideo.requestFullscreen()
-          } else {
-            document.exitFullscreen()
-          }
-          break;
-        default:
-          if (PlaybackSeekControlValues.includes(key)) {
-            playbackSeekByPercentage(focusedVideo, key)
-          }
-          break;
-      }
+      runPlaybackControls(focusedVideo, {
+        key: e.key,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey
+      })
     })
   }),
+  addWindowSetupHook('windowExposedPlaybackControls', videoData => {
+    // @ts-ignore: Unsafewindow is global in userscript context
+    unsafeWindow.videoPlaybackControls = (keyboard: KeyboardData) => {
+      runPlaybackControls(videoData.focusedVideo(), keyboard)
+    }
+
+    windowMessaging.rawPlayback.addListener(_ => true)((keyboard, _listener) => {
+      runPlaybackControls(videoData.focusedVideo(), keyboard)
+    })
+  })
 ]
+
+function runPlaybackControls(video: CustomHTMLVideoElement, keyboard: KeyboardData) {
+  const key = keyboard.key.toUpperCase() as PlaybackControls
+  if (!PlaybackControlValues.includes(key)) { return }
+  switch (key) {
+    case PlaybackControls.Play:
+      playbackPlayPause(video)
+      break
+    case PlaybackControls.Prev5:
+      playbackReverseByN(video, 5)
+      break
+    case PlaybackControls.Prev10:
+      playbackReverseByN(video, 10)
+      break
+    case PlaybackControls.Ahead5:
+      playbackForwardByN(video, 5)
+      break
+    case PlaybackControls.Ahead10:
+      playbackForwardByN(video, 10)
+      break
+    case PlaybackControls.Slower:
+      playbackRateDecrease(video, 0.25)
+      break;
+    case PlaybackControls.Faster:
+      playbackRateIncrease(video, 0.25)
+      break;
+    case PlaybackControls.FullScreen:
+      if (!document.fullscreenElement) {
+        video.requestFullscreen()
+      } else {
+        document.exitFullscreen()
+      }
+      break;
+    default:
+      if (PlaybackSeekControlValues.includes(key)) {
+        playbackSeekByPercentage(video, key)
+      }
+      break;
+  }
+}
 
 function createPip() {
   'use strict';
@@ -443,7 +462,7 @@ function createPip() {
     pipButton: createPipButton(),
     browserAgent: browserAgent(),
     focusedVideo: () => videoEls[0],
-    eventSyncData: { isRunning: false },
+    eventSyncData: {},
 
   }
 
@@ -488,6 +507,7 @@ function setupParentWindowListener() {
     window.dispatchEvent(evt)
   })
 }
+
 
 (async function () {
   'use strict';

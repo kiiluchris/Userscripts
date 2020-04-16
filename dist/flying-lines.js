@@ -27,7 +27,7 @@ const sendWindowMessageWithType = (messageType = null) => (data, { mWindow = win
   }, target);
 };
 
-const windowMessaging = ["playback"].reduce((acc, key) => {
+const windowMessaging = ["playback", "rawPlayback"].reduce((acc, key) => {
   acc[key] = {
     addListener: setWindowMessageListenerOfType(key),
     sendMessage: sendWindowMessageWithType(key),

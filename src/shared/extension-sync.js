@@ -41,7 +41,7 @@ export const sendWindowMessageWithType = (messageType = null) => (data, { mWindo
 
 export const sendWindowMessage = sendWindowMessageWithType(null)
 
-export const windowMessaging = ["playback"].reduce((acc, key) => {
+export const windowMessaging = ["playback", "rawPlayback"].reduce((acc, key) => {
   acc[key] = {
     addListener: setWindowMessageListenerOfType(key),
     sendMessage: sendWindowMessageWithType(key),

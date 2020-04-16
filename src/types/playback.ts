@@ -15,7 +15,9 @@ export interface VideoData {
   focusedVideo: () => CustomHTMLVideoElement,
   playbackChangeRate: number,
   pipButton: HTMLButtonElement,
-  eventSyncData: SyncData,
+  eventSyncData: {
+    [eventName: string]: SyncData
+  },
 }
 
 export interface BrowserAgent {

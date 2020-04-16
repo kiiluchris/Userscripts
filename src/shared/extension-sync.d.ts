@@ -24,6 +24,7 @@ export interface PlaybackControlsData {
   keyboard?: KeyboardData,
 }
 
+
 export type InternalMessageListener<T> = (eventData: WindowMessageData<T>) => void
 export type ExternalMessageListener<T> = (data: T, listener: InternalMessageListener<T>) => void
 
@@ -32,7 +33,8 @@ export declare function getWindowMessage<T>(cond: (data: T) => boolean): Promise
 export declare function setWindowMessageListener<T>(cond: (data: T) => boolean): (listener: ExternalMessageListener<T>) => void
 
 export interface WindowMessagingDict {
-  playback: WindowMessaging<PlaybackControlsData>
+  playback: WindowMessaging<PlaybackControlsData>,
+  rawPlayback: WindowMessaging<KeyboardData>
 }
 
 export interface WindowMessaging<T> {
