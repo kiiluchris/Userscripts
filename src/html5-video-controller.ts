@@ -40,7 +40,9 @@ import { PlaybackControlValues, PlaybackControls } from './types/playback';
   }
 
   // @ts-ignore: Undefined type of "unsafeWindow", only available in userscript
-  unsafeWindow.videoPlaybackController = runPlaybackControls
+  unsafeWindow.playbackControls = Object.assign(unsafeWindow.playbackControls || {}, {
+    controlIframe: runPlaybackControls
+  })
 
   window.addEventListener('keyup', e => {
     const key = e.key.toUpperCase() as PlaybackControls

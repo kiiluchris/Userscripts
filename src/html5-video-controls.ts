@@ -403,9 +403,11 @@ const windowScopedSetupEvents = [
   }),
   addWindowSetupHook('windowExposedPlaybackControls', videoData => {
     // @ts-ignore: Unsafewindow is global in userscript context
-    unsafeWindow.videoPlaybackControls = (keyboard: KeyboardData) => {
-      runPlaybackControls(videoData.focusedVideo(), keyboard)
-    }
+    unsafeWindow.playbackControls = Object.assign(unsafeWindow.playbackControls || {}, {
+      controlVideo: (keyboard: KeyboardData) => {
+        runPlaybackControls(videoData.focusedVideo(), keyboard)
+      }
+    })
 
     windowMessaging.rawPlayback.addListener(_ => true)((keyboard, _listener) => {
       runPlaybackControls(videoData.focusedVideo(), keyboard)
