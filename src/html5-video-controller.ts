@@ -41,7 +41,7 @@ import { PlaybackControlValues, PlaybackControls } from './types/playback';
 
   // @ts-ignore: Undefined type of "unsafeWindow", only available in userscript
   unsafeWindow.playbackControls = Object.assign(unsafeWindow.playbackControls || {}, {
-    controlIframe: runPlaybackControls
+    iframe: runPlaybackControls
   })
 
   window.addEventListener('keyup', e => {

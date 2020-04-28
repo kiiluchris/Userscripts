@@ -149,6 +149,7 @@ function playbackRateControls(video: CustomHTMLVideoElement, playbackChangeRate:
   faster.innerHTML = '&#x1F407;'
   slower.style.color = '#fff'
   faster.style.color = '#fff'
+  faster.style.transform = 'scaleX(-1)'
   overlay.style.position = 'absolute'
   overlay.style.display = 'inline-flex'
   overlay.style.gridColumnGap = '8px'
@@ -404,7 +405,7 @@ const windowScopedSetupEvents = [
   addWindowSetupHook('windowExposedPlaybackControls', videoData => {
     // @ts-ignore: Unsafewindow is global in userscript context
     unsafeWindow.playbackControls = Object.assign(unsafeWindow.playbackControls || {}, {
-      controlVideo: (keyboard: KeyboardData) => {
+      video: (keyboard: KeyboardData) => {
         runPlaybackControls(videoData.focusedVideo(), keyboard)
       }
     })
