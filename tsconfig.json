@@ -8,6 +8,8 @@
     "target": "ES6",
     "importHelpers": false,
     "noEmitHelpers": true,
+    "strict": true,
+    "checkJs": false
   },
   "include": [
     "src/**/*"
