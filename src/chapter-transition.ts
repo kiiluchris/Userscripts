@@ -1,4 +1,4 @@
-import { waybackify } from './shared';
+import { waybackify } from './shared/utils'
 
 // ==UserScript==
 // @name         Transition Chapter
@@ -12,27 +12,53 @@ import { waybackify } from './shared';
 // @grant        window.close
 // ==/UserScript==
 
-const id = x => x;
+const id = <T>(x: T) => x;
+type KeyboardConditional = (event: KeyboardEvent) => Boolean;
 
+type GetChapters = (event: KeyboardEvent) => string[];
 
-(function () {
+declare function GM_openInTab(url: string, options: {
+  active: boolean,
+  insert: boolean,
+  setParent: boolean,
+}): void;
+
+interface ChapterSelectorMap {
+  re: RegExp,
+  selectors?: [string, string],
+  getChapters?: GetChapters,
+  handler?: (prev: boolean, next: boolean) => void,
+  cond?: KeyboardConditional
+}
+
+interface SplitChapterSelectors {
+  prevPartSelector: string,
+  nextPartSelector: string,
+}
+
+; (function () {
   'use strict';
 
-  const selectChapter = (prev, next, cond) => e => {
+  const clickElBySelector = (selector: string) => {
+    const el = document.querySelector(selector) as HTMLElement
+    el.click()
+  }
+
+  const selectChapter = (prev: string, next: string, cond: KeyboardConditional) => (e: KeyboardEvent) => {
     if (!cond(e)) return false;
     switch (e.key) {
       case 'ArrowLeft':
-        return document.querySelector(prev).click();
+        return clickElBySelector(prev);
       case 'ArrowRight':
-        return document.querySelector(next).click();
+        return clickElBySelector(next);
     }
   };
-  const selectChapterFactory = (cond = (e => e.shiftKey), getChapters = null) => (prevSelector, nextSelector, splitChapterSelectors) => {
+  const selectChapterFactory = (cond: KeyboardConditional = (e => e.shiftKey), getChapters: GetChapters | null = null) => (prevSelector: string, nextSelector: string, splitChapterSelectors?: SplitChapterSelectors) => {
     const { prevPartSelector, nextPartSelector } = splitChapterSelectors || {};
     let canOpenChapters = false;
     const nextChapterFn = selectChapter(prevSelector, nextSelector, cond);
-    const nextPartFn = splitChapterSelectors ? selectChapter(prevPartSelector, nextPartSelector, e => e.shiftKey && e.ctrlKey) : id;
-    return e => {
+    const nextPartFn = splitChapterSelectors ? selectChapter(prevPartSelector!!, nextPartSelector!!, e => e.shiftKey && e.ctrlKey) : id;
+    return (e: KeyboardEvent) => {
       nextPartFn(e);
       nextChapterFn(e);
       if (getChapters) {
@@ -52,7 +78,7 @@ const id = x => x;
     }
   };
 
-  const chapterSelectorMap = [
+  const chapterSelectorMap: ChapterSelectorMap[] = [
     {
       re: /mangakakalot.com\/chapter/,
       selectors: ['div.btn-navigation-chap > a.next', 'div.btn-navigation-chap > a.back']
@@ -69,7 +95,7 @@ const id = x => x;
       re: /readlightnovel\.org\/[^\/]+\/chapter/,
       selectors: ['ul.chapter-actions a.prev', 'ul.chapter-actions a.next'],
       getChapters: e => {
-        const select = document.querySelector('ul.chapter-actions select');
+        const select = document.querySelector('ul.chapter-actions select') as HTMLSelectElement;
         return [...select.options].slice(select.selectedIndex + 1).map(opt => opt.value)
       }
     },
@@ -100,7 +126,7 @@ const id = x => x;
     {
       re: /justreads.net\/translations\/[^\/]+\/[^\/]+.php/,
       handler(prev, next) {
-        const links = [...document.querySelectorAll('#accordion div.card-header')];
+        const links = [...document.querySelectorAll('#accordion div.card-header')] as HTMLDivElement[];
         const currentIndex = links.findIndex(el => el.getAttribute('aria-expanded') === 'true');
         const getIndex = () => {
           if (!~currentIndex) return 0;
@@ -133,14 +159,14 @@ const id = x => x;
     }
   ];
 
-  const getChapterSelector = url => {
+  const getChapterSelector = (url: string) => {
     for (const { re, selectors, cond, getChapters, handler } of chapterSelectorMap) {
       if (waybackify(re).test(url)) {
         console.log(`Chapter Transition Userscript: URL ${re} matched`);
-        return handler ? (e => {
+        return handler ? ((e: KeyboardEvent) => {
           const [prev, next] = [e.key === 'ArrowLeft', e.key === 'ArrowRight'];
           e.shiftKey && (prev || next) && handler(prev, next);
-        }) : selectChapterFactory(cond, getChapters)(...selectors);
+        }) : selectChapterFactory(cond, getChapters)(...selectors!!);
       }
     }
     console.log(`Chapter Transition Userscript: No URL matched`);

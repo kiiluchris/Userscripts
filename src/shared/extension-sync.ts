@@ -1,6 +1,6 @@
 import { EXTENSION_NAME } from './constants.js';
 
-export const getMessageFromExtension = status => new Promise(res => {
+export const getMessageFromExtension = (status: string) => new Promise<boolean>(res => {
   window.addEventListener("message", ({ data: { extension, status: s } }) => {
     if (extension === 'Comic Manager' && status === s) {
       res(true);
@@ -8,9 +8,9 @@ export const getMessageFromExtension = status => new Promise(res => {
   });
 });
 
-export const setWindowMessageListenerOfType = (messageType = null) => condition => fn => {
+export const setWindowMessageListenerOfType = <T>(messageType: string | null = null) => (condition: (data: T) => boolean) => (fn: ExternalMessageListener<T>) => {
   if (!condition) throw "No condition function given";
-  const listener = ({ data: { extension, messageType: m, data } }) => {
+  const listener: InternalMessageListener<T> = ({ data: { extension, messageType: m, data } }) => {
     if (extension === EXTENSION_NAME && m == messageType && condition(data)) {
       fn(data, listener)
     }
@@ -21,8 +21,8 @@ export const setWindowMessageListenerOfType = (messageType = null) => condition 
 export const setWindowMessageListener = setWindowMessageListenerOfType()
 
 
-export const getWindowMessageOfType = (messageType = null) => condition => new Promise((res, rej) => {
-  setWindowMessageListenerOfType(messageType)(condition)((data, listener) => {
+export const getWindowMessageOfType = <T>(messageType: string | null = null) => (condition: (data: T) => boolean) => new Promise((res, rej) => {
+  setWindowMessageListenerOfType<T>(messageType)(condition)((data, listener) => {
     console.log(data)
     res(data)
     window.removeEventListener("message", listener)
@@ -31,7 +31,7 @@ export const getWindowMessageOfType = (messageType = null) => condition => new P
 
 export const getWindowMessage = getWindowMessageOfType()
 
-export const sendWindowMessageWithType = (messageType = null) => (data, { mWindow = window, target = "*" } = {}) => {
+export const sendWindowMessageWithType = <T>(messageType = null) => (data: T, { mWindow = window, target = "*" } = {}) => {
   mWindow.postMessage({
     extension: EXTENSION_NAME,
     messageType,
@@ -41,16 +41,9 @@ export const sendWindowMessageWithType = (messageType = null) => (data, { mWindo
 
 export const sendWindowMessage = sendWindowMessageWithType(null)
 
-export const windowMessaging = ["playback", "rawPlayback"].reduce((acc, key) => {
-  acc[key] = {
-    addListener: setWindowMessageListenerOfType(key),
-    sendMessage: sendWindowMessageWithType(key),
-    once: getWindowMessageOfType(key)
-  }
-  return acc
-}, {})
+export const windowMessaging: WindowMessagingDict = {}
 
-export const windowLoaded = () => new Promise(res => {
+export const windowLoaded = () => new Promise<boolean>(res => {
   if (document.readyState === 'complete') return res(false)
   window.addEventListener("load", e => {
     res(false);
@@ -58,11 +51,11 @@ export const windowLoaded = () => new Promise(res => {
 });
 
 
-export const savePage = async (url) => {
-  let timeoutID;
+export const savePage = async (url: string) => {
+  let timeoutID: number;
   const isPageSaved = await new Promise(res => {
     const extension = EXTENSION_NAME
-    const listenForMessageConfirm = ({ data: { message, extensionName } }) => {
+    const listenForMessageConfirm = ({ data: { message, extensionName } }: MessageEvent) => {
       if (extension === extensionName && `Saved: ${url}` === message) {
         window.removeEventListener('message', listenForMessageConfirm);
         clearTimeout(timeoutID);
@@ -87,14 +80,14 @@ export const savePage = async (url) => {
 };
 
 
-export const runOnPageLoad = (fn) => (
+export const runOnPageLoad = (fn: (hasLoaded: boolean) => any) => (
   Promise.race([
     getMessageFromExtension("loading"),
     windowLoaded()
   ]).then(fn)
 );
 
-export const eventTrigger = (eventName) => (el, data = {}) => {
+export const eventTrigger = (eventName: string) => (el: HTMLElement, data: any = {}) => {
   const e = new CustomEvent(eventName, {
     ...data,
     extensionName: EXTENSION_NAME
@@ -103,7 +96,7 @@ export const eventTrigger = (eventName) => (el, data = {}) => {
 };
 
 
-export const eventWatcher = (eventName) => (el, data = {}) => {
+export const eventWatcher = (eventName: string) => (el: HTMLElement, data = {}) => {
   return new Promise(res =>
     el.addEventListener(eventName, res, { once: true })
   )

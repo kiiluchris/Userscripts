@@ -1,4 +1,7 @@
-import { compose } from './shared'
+import {
+  compose,
+  isBrowserAgentChromium
+} from './shared/utils'
 
 // ==UserScript==
 // @name         Webnovel Open Boxnovel
@@ -32,7 +35,7 @@ import { compose } from './shared'
       console.log(`Opening ${formattedTitle} => ${url}`);
       GM_openInTab(url, {
         active: false,
-        insert: true,
+        insert: !isBrowserAgentChromium(),
         setParent: true
       });
     });

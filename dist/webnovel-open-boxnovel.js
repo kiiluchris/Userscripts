@@ -1,7 +1,10 @@
 const compose = (...fns) => {
-    return x => fns.reduceRight(
-        (acc, fn) => fn(acc), x
-    )
+    return (x) => fns.reduceRight((acc, fn) => fn(acc), x);
+};
+const isBrowserAgentChromium = () => {
+    return !window.navigator.userAgent
+        .toLowerCase()
+        .includes("firefox");
 };
 
 // ==UserScript==
@@ -35,7 +38,7 @@ const compose = (...fns) => {
       console.log(`Opening ${formattedTitle} => ${url}`);
       GM_openInTab(url, {
         active: false,
-        insert: true,
+        insert: !isBrowserAgentChromium(),
         setParent: true
       });
     });

@@ -1,7 +1,7 @@
 import { EXTENSION_NAME } from './constants'
 import { savePage } from './extension-sync'
 
-export async function openLinks(links, isSaved) {
+export async function openLinks(links: ClickableWithHref[], isSaved: boolean) {
   if (!links.length) return false;
   const [first, ...rest] = links;
   if (!isSaved) rest.reverse();
@@ -19,9 +19,10 @@ export async function openLinks(links, isSaved) {
   return true;
 }
 
-export function openURLs([firstUrl, ...urls], isSaved = false) {
-  const links = urls.map(u => ({ href: u }));
+export function openURLs([firstUrl, ...urls]: string[], isSaved: boolean = false) {
+  const links: ClickableWithHref[] = urls.map(u => ({ href: u, click() { } }));
   links.unshift({
+    href: firstUrl,
     click() {
       const link = document.createElement('a');
       link.href = firstUrl;
@@ -31,7 +32,7 @@ export function openURLs([firstUrl, ...urls], isSaved = false) {
           message: "replaceMonitorNovelUpdatesUrl",
           url: link.href,
           extension: EXTENSION_NAME
-        });
+        }, "*");
       });
       document.body.appendChild(link);
       link.click();
@@ -41,14 +42,24 @@ export function openURLs([firstUrl, ...urls], isSaved = false) {
 }
 
 
-export function getLinks({ elements, selector, filterHref, filterText, condition }) {
+export function getLinks({
+  elements, selector, filterHref,
+  filterText, condition
+}: {
+  elements?: HTMLElement[],
+  selector?: string,
+  filterHref?: RegExp,
+  filterText?: RegExp,
+  condition?: () => boolean
+}) {
   if ((!selector && !elements) || (condition && !condition())) return [];
-  let links = [...(selector ? document.querySelectorAll(selector) : elements)];
+  let links = [...(selector ? document.querySelectorAll<HTMLAnchorElement>(selector) : (elements as HTMLAnchorElement[]))];
   if (filterHref) {
     links = links.filter(el => filterHref.test(el.href));
   }
   if (filterText) {
     links = links.filter(el => filterText.test(el.innerText));
   }
-  return console.log(links) || links;
+  console.log(links)
+  return links;
 }

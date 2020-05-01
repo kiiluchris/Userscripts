@@ -1,4 +1,4 @@
-import { waybackify } from './shared';
+import { waybackify } from './shared/utils';
 import { getLinks, openURLs, openLinks } from './shared/link-open'
 import {
   runOnPageLoad, getMessageFromExtension,

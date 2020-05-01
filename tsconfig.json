@@ -9,7 +9,10 @@
     "importHelpers": false,
     "noEmitHelpers": true,
     "strict": true,
-    "checkJs": false
+    "moduleResolution": "node",
+    // "allowJs": true,
+    // "checkJs": false,
+    "typeRoots": ["src/types"],
   },
   "include": [
     "src/**/*"
