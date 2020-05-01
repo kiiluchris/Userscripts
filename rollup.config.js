@@ -3,7 +3,9 @@ import * as fs from 'fs';
 
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import { terser } from "rollup-plugin-terser";
+// import {
+//   terser
+// } from "rollup-plugin-terser";
 
 const entryRoot = path.resolve(__dirname, 'src')
 const outputRoot = path.resolve(__dirname, 'dist')
@@ -34,15 +36,15 @@ export default srcFiles.map(file_ => {
       typescript(),
     ]
   }
-  if (file_.endsWith('.ts')) {
-    options.plugins.push(
-      terser({
-        output: {
-          comments: "all"
-        }
-      }),
-    )
-  }
+  // if (file_.endsWith('.ts')) {
+  //   options.plugins.push(
+  //     terser({
+  //       output: {
+  //         comments: "all"
+  //       }
+  //     }),
+  //   )
+  // }
 
   return options
 });

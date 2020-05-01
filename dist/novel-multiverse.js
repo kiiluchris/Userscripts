@@ -1,80 +1,62 @@
-// import { eventTrigger } from './shared/extension-sync'
+const EXTENSION_NAME = 'Comic Manager';
 
-// // ==UserScript==
-// // @name         Flying Lines
-// // @namespace    http://tampermonkey.net/
-// // @version      0.1
-// // @description  try to take over the world!
-// // @author       You
-// // @match        https://www.flying-lines.com/chapter/**/*
-// // @match        https://www.flying-lines.com/nu/**/*
-// // @grant        none
-// // ==/UserScript==
-
-
-
-const clickElementAndLog = (selector, message, errorMessage) => {
-  const eventTrigger = eventTrigger('novel-multiverse-loaded');
-  return _e => {
-    eventTrigger(document.body, {});
-    const observer = new MutationObserver(_muts => {
-      const element = document.querySelector(selector);
-      if (!element) return console.log(errorMessage)
-      observer.disconnect();
-      console.log(message);
-      element.click();
-
-    });
-    observer.observe(document.body, { childList: true });
-  }
+const eventTrigger = (eventName) => (el, data = {}) => {
+    const e = new CustomEvent(eventName, Object.assign(Object.assign({}, data), { extensionName: EXTENSION_NAME }));
+    el.dispatchEvent(e);
 };
 
-const deleteElementAndLog = (selector, message, errorMessage) => {
-  const flyingLinesLoadEventTrigger = eventTrigger('novelmultiverseloaded');
-  return _e => {
-    flyingLinesLoadEventTrigger(document.body, {});
-    const observer = new MutationObserver(_muts => {
-      const element = document.querySelector(selector);
-      if (!element) return console.log(errorMessage)
-      observer.disconnect();
-      console.log(message);
-      element.remove();
-
-    });
-    observer.observe(document.body, { childList: true });
-  }
-};
-
-const multiFunc = (...fns) => {
-  return (...args) => {
-    fns.forEach(fn => fn(...args));
-  }
-};
-
-
+// ==UserScript==
+// @name         Flying Lines
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  try to take over the world!
+// @author       You
+// @match        https://www.flying-lines.com/chapter/**/*
+// @match        https://www.flying-lines.com/nu/**/*
+// @grant        none
+// ==/UserScript==
+function mutationEventHandlerFactory(eventName, cb) {
+    return (selector, message, errorMessage) => {
+        const trigger = eventTrigger(eventName);
+        return (_e) => {
+            trigger(document.body, {});
+            const observer = new MutationObserver(_muts => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return console.log(errorMessage);
+                }
+                observer.disconnect();
+                console.log(message);
+                cb(element);
+            });
+            observer.observe(document.body, {
+                childList: true
+            });
+        };
+    };
+}
+const clickElementAndLog = mutationEventHandlerFactory('novel-multiverse-loaded', el => {
+    el.click();
+});
+const deleteElementAndLog = mutationEventHandlerFactory('novelmultiverseloaded', el => {
+    el.remove();
+});
+function multiFunc(...fns) {
+    return (e) => {
+        fns.forEach(fn => fn(e));
+    };
+}
 (function () {
-
-  const hideNotificationPrompt = deleteElementAndLog(
-    '.g1-popup.g1-popup-newsletter',
-    'Sign-up prompt hidden',
-    'Sign-up prompt element not found'
-  );
-  const hideVIPPrompt = clickElementAndLog(
-    '#layui-layer1 .icon-sprites3x',
-    'VIP prompt hidden',
-    'VIP prompt element not found'
-  );
-
-  const closeLoginForm = clickElementAndLog(
-    'div.modal-login.in i.closes',
-    'Login form closed',
-    'Login form element not found'
-  );
-
-  const match = [
-    [/www.flying-lines.com\/nu/, closeLoginForm],
-    [/www.flying-lines.com\/chapter/, multiFunc(hideNotificationPrompt, hideVIPPrompt)],
-  ].find(([re]) => re.test(window.location.href));
-  if (!match) return
-  window.addEventListener('load', multiFunc(hideNotificationPrompt, hideVIPPrompt));
+    const hideNotificationPrompt = deleteElementAndLog('.g1-popup.g1-popup-newsletter', 'Sign-up prompt hidden', 'Sign-up prompt element not found');
+    const hideVIPPrompt = clickElementAndLog('#layui-layer1 .icon-sprites3x', 'VIP prompt hidden', 'VIP prompt element not found');
+    const closeLoginForm = clickElementAndLog('div.modal-login.in i.closes', 'Login form closed', 'Login form element not found');
+    const patterns = [
+        [/www.flying-lines.com\/nu/, closeLoginForm],
+        [/www.flying-lines.com\/chapter/, multiFunc(hideNotificationPrompt, hideVIPPrompt)],
+    ];
+    const match = patterns.find(([re]) => re.test(window.location.href));
+    if (!match) {
+        return;
+    }
+    window.addEventListener('load', multiFunc(hideNotificationPrompt, hideVIPPrompt));
 })();
