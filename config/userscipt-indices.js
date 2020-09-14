@@ -1,0 +1,22 @@
+module.exports = {
+  "AutoreloadImages": 0,
+  "ChapterTransition": 1,
+  "CssColorChange": 2,
+  "ExposedFunctions": 3,
+  "FlyingLines": 4,
+  "FuyunekoChapters": 5,
+  "Gogoanime": 6,
+  "Kimcartoon": 7,
+  "LoadAllImages": 8,
+  "MangadexPreload": 9,
+  "Meejee": 10,
+  "NovelMultiverse": 11,
+  "NovelupdatesList": 12,
+  "QtfraIframe": 13,
+  "SkipUpdatePage": 14,
+  "SwapVipnovelBoxnovel": 15,
+  "Tooltips": 16,
+  "WebnovelChapterReader": 17,
+  "WebnovelOpenBoxnovel": 18,
+  "WebtoonLikeComic": 19
+};

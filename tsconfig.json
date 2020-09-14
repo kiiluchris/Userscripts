@@ -1,21 +1,26 @@
 {
   "compilerOptions": {
-    "module": "ES2020",
+    "module": "ESNext",
     "noImplicitAny": true,
-    "removeComments": false,
+    // "removeComments": false,
     "preserveConstEnums": true,
     // "sourceMap": true,
-    "target": "ES6",
+    "target": "ES2019",
     "importHelpers": false,
     "noEmitHelpers": true,
     "strict": true,
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     // "allowJs": true,
     // "checkJs": false,
-    "typeRoots": ["src/types"],
+    "typeRoots": [
+      "types",
+      "node_modules/@types"
+    ],
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "types/**/*"
   ],
   "exclude": [
     "node_modules",

@@ -1,4 +1,2 @@
-.metals
-.vscode
 node_modules
-
+tags*

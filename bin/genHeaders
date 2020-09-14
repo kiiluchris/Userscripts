@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+const path = require('path')
+const fs = require('fs')
+const utils = require('../config/config-utils')
+
+const cwd = path.resolve(__dirname, '..')
+
+const generateHeader = ({name, headerPath}) => {
+    if(!fs.existsSync(headerPath)){
+        const headerName = utils.userscriptName(path.basename(headerPath))
+        const headerObj = utils.defaultUserscriptHeader(headerName)
+        fs.writeFileSync(headerPath, utils.headerJsString(headerObj))
+    }
+}
+
+utils.buildEntrypoints(cwd).forEach(generateHeader);
+
+module.exports = generateHeader;
+

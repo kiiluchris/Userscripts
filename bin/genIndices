@@ -1,0 +1,9 @@
+#!/usr/bin/env node 
+
+const path = require('path')
+const configGen = require('../config/config-gen')
+
+const cwd = path.resolve(__dirname, '..')
+
+const indiceMap = configGen.generateSliceIndices(cwd)
+configGen.writeSliceIndices(indiceMap, path.resolve(cwd, 'config'))
