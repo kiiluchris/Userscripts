@@ -256,7 +256,8 @@ const zmunjaliConfig = [
             }
             link.click();
         },
-    }, {
+    },
+    {
         urls: [/zmunjali.wordpress.com\/[^/]+\/[^/]+chapter-\d+/],
         cb() {
             const { hash } = window.location;
@@ -338,7 +339,8 @@ runOnPageLoad(async (savedPage) => {
                 select.val('1');
                 select.trigger('change');
             },
-        }, {
+        },
+        {
             urls: [/www.flying-lines.com\/nu\/./],
             cb: async (_isSaved) => {
                 var _a;
@@ -349,7 +351,8 @@ runOnPageLoad(async (savedPage) => {
                 ]);
                 (_a = document.querySelector('a.continue-reading')) === null || _a === void 0 ? void 0 : _a.click();
             },
-        }, {
+        },
+        {
             urls: [
                 /starrydawntranslations.wordpress.com\/20\d{2}\/\d{2}\/\d{2}/,
                 /infinitenoveltranslations.net\/summoned-slaughterer-chapter-\d+/,
@@ -403,7 +406,8 @@ runOnPageLoad(async (savedPage) => {
             cb: openLinksFactory({
                 selector: '.entry-content a[href*="/novel/"]',
             }),
-        }, {
+        },
+        {
             urls: [
                 /butterflyscurse.stream\/[^/]+-\d+\/?$/,
             ],
@@ -419,7 +423,8 @@ runOnPageLoad(async (savedPage) => {
                 const { urls } = await getWindowMessage((data) => !!data.urls);
                 openURLs(urls, isSaved);
             },
-        }, {
+        },
+        {
             urls: [/radianttranslations.com\/20\d{2}\/\d{2}\/\d{2}/],
             cb: openLinksFactory({
                 selector: '.entry-content a:not([title])',
@@ -431,7 +436,8 @@ runOnPageLoad(async (savedPage) => {
                 selector: '.entry-content  a',
                 filterHref: /index\/./,
             }),
-        }, {
+        },
+        {
             urls: [/snowycodex.com\/[\w-]+-chapters?-\d+/],
             cb: openLinksFactory({
                 selector: '.entry-content a:not(.jp-relatedposts-post-a)',
@@ -439,7 +445,8 @@ runOnPageLoad(async (savedPage) => {
                     test: (url) => !/(\?share|wp-content)/.test(url),
                 },
             }),
-        }, {
+        },
+        {
             urls: [
                 /oppatranslations.com\/20\d{2}\/\d{2}\/\d{2}/,
                 /rottentranslations.com\/20\d{2}\/\d{2}\/\d{2}/,
@@ -482,7 +489,8 @@ runOnPageLoad(async (savedPage) => {
                 selector: '.entry-content a, .entry a:not(.jp-relatedposts-post-a)',
                 filterText: /(chapter|v\d+c\d+|(pro|epi)logue)/i,
             }),
-        }, {
+        },
+        {
             urls: [/www.webnovel.com\/rssbook\/\d+\/\d+\/?$/],
             cb() {
                 const link = document.querySelector('._ft.pa.l0.b0 > a');
@@ -502,7 +510,8 @@ runOnPageLoad(async (savedPage) => {
                     return false;
                 }).observe(link, { attributes: true });
             },
-        }, {
+        },
+        {
             urls: [/bayabuscotranslation\.com\/20\d{2}\/\d{2}\/\d{2}/],
             cb() {
                 if (!window.location.pathname.match(/\/\d\/$/)) {
@@ -568,7 +577,8 @@ runOnPageLoad(async (savedPage) => {
                 filterText: /Here's the (?:c|C)hapter/,
                 filterHref: /lionmask.blogspot.com\/p\//,
             }),
-        }, {
+        },
+        {
             urls: [/scrya.org\/20\d{2}\/\d{2}\/\d{2}/],
             cb: (isSaved) => {
                 const chapterURL = (n) => (`http://scrya.org/my-disciple-died-yet-again/disciple-chapter-${n}/`);
@@ -579,14 +589,16 @@ runOnPageLoad(async (savedPage) => {
                     : [...Array(end - start + 1).keys()].map((i) => i + start).map((c) => chapterURL(c));
                 return openURLs(links, isSaved);
             },
-        }, {
+        },
+        {
             urls: [/rubymaybetranslations.com\/20\d{2}\/\d{2}\/\d{2}/],
             cb: openLinksFactory({
                 selector: '.entry-content a:not(.jp-relatedposts-post-a)',
                 filterText: /\d+$/,
                 filterHref: /rubymaybetranslations.com\//,
             }),
-        }, {
+        },
+        {
             urls: [/xaiomoge.com\/[^/]+\/?$/],
             cb: openLinksFactory({
                 selector: '.entry-content a',
@@ -598,7 +610,8 @@ runOnPageLoad(async (savedPage) => {
                 filterText: /chapter \d+/i,
                 onlyOnce: true,
             }),
-        }, {
+        },
+        {
             urls: [urlWithDate('sleepytranslations.com')],
             cb: openLinksFactory({
                 selector: '.post a',

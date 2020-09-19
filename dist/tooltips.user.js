@@ -138,13 +138,15 @@ const templates = [
             const startI = text.findIndex((txt) => txt !== firstText && txt.startsWith(firstText));
             return [els, text.slice(startI).filter((_) => _)];
         },
-    }, {
+    },
+    {
         re: [/myoniyonitranslations.com\/[^/]+\/.+-chapter/],
         selectorOpts: {
             rootSelector: '.entry-content sup',
         },
         fn: tooltipSelectorSimilarSrcTgt,
-    }, {
+    },
+    {
         re: [/jingletranslations.wordpress.com\/20\d{2}\/\d{2}\/\d{2}/],
         selectorOpts: {
             rootSelector: '.entry-content sup a',
@@ -156,7 +158,8 @@ const templates = [
             });
             return [els, text];
         },
-    }, {
+    },
+    {
         re: [
             /sadhoovysinhumantranslations.wordpress.com\/novels\/[^/]+\/.+-chapter-/,
             /confusedtls.wordpress.com\/[^/]+-chapter/,
@@ -172,7 +175,8 @@ const templates = [
             });
             return [els, text];
         },
-    }, {
+    },
+    {
         re: [/creativenovels.com\/128\/[^/]+-chapter/],
         selectorOpts: {
             rootSelector: '.entry-content p',
@@ -239,7 +243,8 @@ const templates = [
             const xs = roots.length ? roots : [...document.querySelectorAll('.entry-content p sup')];
             return [xs, textEls];
         },
-    }, {
+    },
+    {
         re: [
             /jiamintranslation.com\/20\d{2}\/\d{2}\/\d{2}/,
             /(silentmoontranslationscom|piperpickups).wordpress.com\/20\d{2}\/\d{2}\/\d{2}/,
@@ -280,7 +285,8 @@ const templates = [
             textSelector: '.entry-content p',
             textFilter: (el) => el.innerText.match(/^(\[|{)\d+(\]|})/) !== null,
         },
-    }, {
+    },
+    {
         re: [/www.wuxiaworld.co\/[^/]+\/\d+.html/],
         selectorOpts: {
             rootSelector: '#content',

@@ -129,7 +129,8 @@ const identity = (x) => x;
                 const index = getIndex();
                 ~index && links[index].click();
             },
-        }, {
+        },
+        {
             re: /volarenovels.com\/[^/]+\/[a-z\d-]+-chapter/,
             selectors: ['.entry-content p[style="text-align: center;"] a:nth-child(1)', '.entry-content p[style="text-align: center;"] a:nth-last-child(1)'],
         },
@@ -153,6 +154,10 @@ const identity = (x) => x;
             re: /mtlnovel.com\/[^/]+\/chapter/,
             selectors: ['.chapter-nav a[rel="prev"]', '.chapter-nav a[rel="next"]'],
         },
+        {
+            re: /www.novelhall.com\/[^/]+\/\d+.html/,
+            selectors: ['.nav-single a[rel="prev"]', '.nav-single a[rel="next"]'],
+        }
     ];
     const getChapterSelector = (url) => {
         const match = chapterSelectorMap.find(({ re }) => waybackify(re).test(url));
