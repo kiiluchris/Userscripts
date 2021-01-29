@@ -73,7 +73,7 @@ export default  (configOptions) => {
           name: 'copy-to-clipboard',
           writeBundle(_bundle){
             exec(`\
-              ( xclip -sel clipboard < ${outputPath} 2> /dev/null  \
+              ( xclip -sel clipboard < ${outputPath} 2> /dev/null && echo "Xclip done" \
               || clip.exe < ${outputPath} \
               || echo "Could not copy output file" \
               ) && echo "Successfully copied output file"`, (err, stdout, stderr) => {

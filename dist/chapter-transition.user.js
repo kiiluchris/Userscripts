@@ -154,10 +154,6 @@ const identity = (x) => x;
             re: /mtlnovel.com\/[^/]+\/chapter/,
             selectors: ['.chapter-nav a[rel="prev"]', '.chapter-nav a[rel="next"]'],
         },
-        {
-            re: /www.novelhall.com\/[^/]+\/\d+.html/,
-            selectors: ['.nav-single a[rel="prev"]', '.nav-single a[rel="next"]'],
-        }
     ];
     const getChapterSelector = (url) => {
         const match = chapterSelectorMap.find(({ re }) => waybackify(re).test(url));

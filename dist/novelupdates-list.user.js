@@ -209,13 +209,24 @@ unsafeWindow.userscripts = {
                 print(details);
                 return details;
             })
-                .catch(console.error);
+                .catch((e) => { console.error(e); return []; });
         },
         details: [],
         filters: filters,
         actions: actions,
-        run(fns) {
-            return fns.reduce((acc, f) => f(acc), this.details);
+        runP(fns, novels) {
+            const novels_ = novels ? novels : this.details;
+            const details = !novels_.length
+                ? this.cacheNovelDetails()
+                : Promise.resolve(novels_);
+            return details.then((novels) => {
+                const res = this.run(fns, novels);
+                console.log(res);
+                return res;
+            });
+        },
+        run(fns, novels) {
+            return fns.reduce((acc, f) => f(acc), novels || this.details);
         }
     }
 };

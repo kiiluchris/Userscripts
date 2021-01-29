@@ -4,7 +4,7 @@ module.exports = {
   "version": "0.1",
   "author": "kiiluchris",
   "description": "",
-  "match": [],
+  "match": ["https://www.novelupdates.com/series/*"],
   "include": [/www.mtlnovel.com\/([^/]+)\//],
   "grant": ["GM_openInTab"],
   "require": [],
