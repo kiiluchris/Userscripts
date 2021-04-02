@@ -8,23 +8,20 @@
 // @grant          none
 // @noframes       
 // ==/UserScript==
-const NumberOfRetries = (init) => {
+const NumberOfRetries = (maxRetries) => {
+    const init = 0;
     return {
         value: init,
         succ() { this.value++; return this; },
-        eq(x) { return this.value === x; },
-        lt(x) { return this.value < x; },
-        lte(x) { return this.value <= x; },
-        gt(x) { return this.value > x; },
-        gte(x) { return this.value >= x; },
-        reset() { this.value = init; return this; }
+        reset() { this.value = init; return this; },
+        done() { return this.value >= maxRetries; },
     };
 };
 (() => {
     const MAX_RETRIES = 5;
     const unloadedImages = new Set();
     const findImages = () => ([...document.getElementsByTagName('img')]);
-    const monitorEvent = (eventName, condition, numRetries, maxRetries) => {
+    const monitorEvent = (eventName, condition, numRetries) => {
         return (el) => {
             el.addEventListener(eventName, (e) => {
                 if (!window.navigator.onLine) {
@@ -32,7 +29,7 @@ const NumberOfRetries = (init) => {
                     unloadedImages.add(el);
                     return;
                 }
-                if (condition(el, e) && numRetries.succ().gt(maxRetries))
+                if (condition(el, e) && numRetries.succ().done())
                     return;
                 const url = new URL(el.src);
                 url.searchParams.set('reload_timestamp', Date.now() + '');
@@ -43,10 +40,10 @@ const NumberOfRetries = (init) => {
     const otherwise = () => true;
     const imageNotCompletelyLoaded = (img) => !img.complete;
     const monitorEvents = (maxRetries) => (el) => {
-        const numRetries = NumberOfRetries(0);
-        monitorEvent('error', otherwise, numRetries, maxRetries)(el);
+        const numRetries = NumberOfRetries(maxRetries);
+        monitorEvent('error', otherwise, numRetries)(el);
         window.addEventListener('load', () => {
-            monitorEvent('load', imageNotCompletelyLoaded, numRetries, maxRetries)(el);
+            monitorEvent('load', imageNotCompletelyLoaded, numRetries)(el);
         });
     };
     findImages().forEach(monitorEvents(MAX_RETRIES));
