@@ -23,9 +23,12 @@ function pageRegex(page) {
         return /www.mtlnovel.com\/([^/]+)\//;
     }
 }
+function mtlNovelToc(novelName) {
+    return `https://www.mtlnovel.com/${novelName}/chapter-list/`;
+}
 function pageUrl(page, novelName) {
     if (page === "novelupdates") {
-        return `https://www.mtlnovel.com/${novelName}/chapter-list/`;
+        return mtlNovelToc(novelName);
     }
     else {
         return `https://www.novelupdates.com/series/${novelName}/`;
@@ -51,7 +54,7 @@ const mtlNovelHook = pageHook("mtlnovel");
             .querySelectorAll(".chapter-nav a.toc")
             .forEach((el) => {
             if (novelName) {
-                el.href = pageUrl(page, novelName);
+                el.href = mtlNovelToc(novelName);
             }
         });
     });
