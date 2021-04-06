@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Webnovel Open Site
 // @namespace      http://tampermonkey.net/
-// @version        0.1
+// @version        0.2
 // @author         You
 // @description    try to take over the world!
 // @match          https://www.webnovel.com/library*
@@ -95,9 +95,10 @@ const openURLsInactiveTab = mkopenURLs((url) => mkClickableWithHref(url), (first
     const formatTitle = (title) => title.toLowerCase().replace(/['|’]/g, "").replace(/ /g, "-");
     const titleElement = (el) => el.getElementsByTagName("h3")[0];
     const elementTitle = (el) => formatTitle(titleElement(el).innerText);
-    const boxNovelUrl = (formattedTitle) => `https://boxnovel.com/novel/${formattedTitle}/`;
-    const vipNovelUrl = (formattedTitle) => `https://vipnovel.com/vipnovel/${formattedTitle}/`;
-    const mangaBobUrl = (formattedTitle) => `https://mangabob.com/manga/${formattedTitle}/`;
+    const makeUrlBuilder = (domain, path = "") => (formattedTitle) => `https://${domain}.com/${path}${formattedTitle}/`;
+    const buildBoxNovelUrl = makeUrlBuilder("boxnovel", "novel/");
+    const buildVipNovelUrl = makeUrlBuilder("vipnovel", "vipnovel/");
+    const buildMangaBobUrl = makeUrlBuilder("mangabob", "manga/");
     const defaultSwapperPredicate = (title) => !!title;
     const makeSwapper = (altUrls, predicate = defaultSwapperPredicate) => (title, mapper) => {
         const alt = altUrls[title];
@@ -116,14 +117,17 @@ const openURLsInactiveTab = mkopenURLs((url) => mkClickableWithHref(url), (first
             .querySelector("span._tag_sub")) === null || _a === void 0 ? void 0 : _a.innerText.toLowerCase()) === "comics");
     };
     const getUrlBuilder = (parentEl, e) => {
-        if (isComic(parentEl)) {
-            return mangaBobUrl;
+        if (isComic(parentEl) && e.altKey) {
+            return buildMangaBobUrl;
         }
-        else if (e.ctrlKey) {
-            return boxNovelUrl;
+        else if (e.ctrlKey && e.altKey) {
+            return buildBoxNovelUrl;
+        }
+        else if (e.altKey) {
+            return buildVipNovelUrl.compose((u) => u.replace("the-experimental", "experimental"));
         }
         else {
-            return vipNovelUrl.compose((u) => u.replace("the-experimental", "experimental"));
+            return null;
         }
     };
     document.querySelectorAll(".m-book a").forEach((el) => {
@@ -132,13 +136,12 @@ const openURLsInactiveTab = mkopenURLs((url) => mkClickableWithHref(url), (first
         el.addEventListener("click", (e) => {
             const formattedTitle = swapTitle(elementTitle(el));
             const buildUrl = getUrlBuilder(el, e);
+            if (buildUrl === null)
+                return;
             const url = swapWholeUrl(buildUrl(formattedTitle));
             const webnovelUrl = new URL(el.href);
             webnovelUrl.searchParams.set("open-last-chapter", "true");
-            if (!(e.altKey || e.ctrlKey))
-                return;
-            e.preventDefault();
-            if (e.ctrlKey && e.altKey) {
+            if (e.ctrlKey && e.altKey && e.shiftKey) {
                 e.preventDefault();
                 openURLsInactiveTab([webnovelUrl.href]);
             }

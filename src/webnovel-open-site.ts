@@ -16,12 +16,12 @@ import { openURLsInactiveTab } from "./shared/link-open";
   const titleElement = (el: HTMLElement) => el.getElementsByTagName("h3")[0]!!;
   const elementTitle = (el: HTMLElement) =>
     formatTitle(titleElement(el).innerText);
-  const boxNovelUrl = (formattedTitle: string) =>
-    `https://boxnovel.com/novel/${formattedTitle}/`;
-  const vipNovelUrl = (formattedTitle: string) =>
-    `https://vipnovel.com/vipnovel/${formattedTitle}/`;
-  const mangaBobUrl = (formattedTitle: string) =>
-    `https://mangabob.com/manga/${formattedTitle}/`;
+  const makeUrlBuilder = (domain: string, path: string = "") => (
+    formattedTitle: string
+  ): string => `https://${domain}.com/${path}${formattedTitle}/`;
+  const buildBoxNovelUrl = makeUrlBuilder("boxnovel", "novel/");
+  const buildVipNovelUrl = makeUrlBuilder("vipnovel", "vipnovel/");
+  const buildMangaBobUrl = makeUrlBuilder("mangabob", "manga/");
   const defaultSwapperPredicate = (title?: string) => !!title;
   const makeSwapper = (
     altUrls: Record<string, string>,
@@ -49,15 +49,17 @@ import { openURLsInactiveTab } from "./shared/link-open";
   const getUrlBuilder = (
     parentEl: HTMLElement,
     e: MouseEvent
-  ): ((title: string) => string) => {
-    if (isComic(parentEl)) {
-      return mangaBobUrl;
-    } else if (e.ctrlKey) {
-      return boxNovelUrl;
-    } else {
-      return vipNovelUrl.compose((u: string) =>
+  ): ((title: string) => string) | null => {
+    if (isComic(parentEl) && e.altKey) {
+      return buildMangaBobUrl;
+    } else if (e.ctrlKey && e.altKey) {
+      return buildBoxNovelUrl;
+    } else if (e.altKey) {
+      return buildVipNovelUrl.compose((u: string) =>
         u.replace("the-experimental", "experimental")
       );
+    } else {
+      return null;
     }
   };
 
@@ -66,12 +68,11 @@ import { openURLsInactiveTab } from "./shared/link-open";
     el.addEventListener("click", (e: MouseEvent) => {
       const formattedTitle = swapTitle(elementTitle(el));
       const buildUrl = getUrlBuilder(el, e);
+      if (buildUrl === null) return;
       const url = swapWholeUrl(buildUrl(formattedTitle));
       const webnovelUrl = new URL(el.href);
       webnovelUrl.searchParams.set("open-last-chapter", "true");
-      if (!(e.altKey || e.ctrlKey)) return;
-      e.preventDefault();
-      if (e.ctrlKey && e.altKey) {
+      if (e.ctrlKey && e.altKey && e.shiftKey) {
         e.preventDefault();
         openURLsInactiveTab([webnovelUrl.href]);
       } else {
